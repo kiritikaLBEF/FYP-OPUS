@@ -1,0 +1,24 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+!.env.example
+dist/
+build/
+.DS_Store
+*.log
+.vite/
+coverage/
+env-test/
+mern-test/
+
+# Uploaded user files
+server/uploads/ads/*
+server/uploads/chat/*
+server/uploads/employer-docs/*
+server/uploads/profiles/*
+server/uploads/certificates/*
+server/uploads/projects/*
+server/uploads/job-covers/*
+server/uploads/workspace/*
+!server/uploads/**/.gitkeep

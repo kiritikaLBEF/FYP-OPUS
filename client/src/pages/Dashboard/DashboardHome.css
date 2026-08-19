@@ -1,0 +1,12 @@
+/* Single-page dashboard layout */
+
+.dash-single {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dt-section-gap);
+}

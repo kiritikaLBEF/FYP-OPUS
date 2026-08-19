@@ -1,0 +1,204 @@
+/* Overview — refined macOS density */
+
+.dov {
+  padding: var(--dt-page-padding);
+}
+
+.dov--embedded {
+  padding: 0;
+  background: transparent;
+}
+
+.dov-welcome-wrap {
+  margin-bottom: var(--dt-section-gap);
+}
+
+.dov-welcome {
+  padding: var(--dt-space-6) var(--dt-space-8);
+  border-radius: var(--dt-radius);
+  border: 0.5px solid var(--dt-card-border);
+  background: var(--dt-bg-elevated);
+  box-shadow: var(--dt-shadow-rest);
+}
+
+.dov-welcome__caption {
+  font-size: var(--dt-caption-size);
+  font-weight: 500;
+  color: var(--dt-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--dt-space-1);
+}
+
+.dov-welcome__title {
+  font-size: var(--dt-h1-size);
+  font-weight: var(--dt-h1-weight);
+  letter-spacing: var(--dt-h1-spacing);
+  line-height: 1.25;
+  color: var(--dt-text-primary);
+}
+
+.dov-welcome__body {
+  font-size: var(--dt-body-size);
+  color: var(--dt-text-secondary);
+  margin-top: var(--dt-space-1);
+  line-height: 1.45;
+}
+
+.dov-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--dt-card-gap);
+}
+
+.dov-stat {
+  padding: var(--dt-card-padding);
+  border-radius: var(--dt-radius);
+  border: 0.5px solid var(--dt-card-border);
+  background: var(--dt-bg-elevated);
+  box-shadow: var(--dt-shadow-rest);
+  transition: background var(--dt-transition), border-color var(--dt-transition);
+}
+
+.dov-stat:hover {
+  background: var(--dt-bg-card-hover);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.dov-stat--primary,
+.dov-stat--secondary,
+.dov-stat--highlight,
+.dov-stat--profile {
+  background: var(--dt-bg-elevated);
+  background-image: none;
+  border-top: 0.5px solid var(--dt-card-border);
+}
+
+.dov-stat__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--dt-space-3);
+}
+
+.dov-stat__icon-wrap {
+  width: var(--dt-icon-container);
+  height: var(--dt-icon-container);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dt-bg-base);
+  color: var(--dt-text-secondary);
+}
+
+.dov-stat--primary .dov-stat__icon-wrap { color: var(--dt-accent-primary); }
+.dov-stat--secondary .dov-stat__icon-wrap { color: var(--dt-accent-secondary); }
+.dov-stat--highlight .dov-stat__icon-wrap { color: var(--dt-accent-highlight); }
+.dov-stat--profile .dov-stat__icon-wrap { color: var(--dt-accent-primary); }
+
+.dov-stat__value {
+  font-size: var(--dt-stat-number-size);
+  font-weight: var(--dt-stat-number-weight);
+  letter-spacing: var(--dt-stat-number-spacing);
+  color: var(--dt-text-primary);
+  line-height: 1.2;
+}
+
+.dov-stat__value--ring {
+  font-size: 1.0625rem;
+}
+
+.dov-stat__label {
+  font-size: var(--dt-stat-label-size);
+  font-weight: var(--dt-stat-label-weight);
+  letter-spacing: var(--dt-stat-label-spacing);
+  color: var(--dt-text-muted);
+  margin-top: 2px;
+}
+
+.dov-stat__ring-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dt-space-4);
+}
+
+.dov-trend {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.dov-trend--up {
+  color: var(--dt-accent-secondary);
+  background: var(--dt-accent-secondary-12);
+}
+
+.dov-trend--down {
+  color: var(--dt-error);
+  background: rgba(255, 59, 48, 0.1);
+}
+
+.dov-ring {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dov-ring svg {
+  transform: rotate(-90deg);
+}
+
+.dov-ring__track {
+  fill: none;
+  stroke: var(--dt-ring-track);
+}
+
+.dov-ring__fill {
+  fill: none;
+  stroke: var(--dt-accent-primary);
+  stroke-linecap: round;
+}
+
+.dov-ring__fill--complete,
+.dov-ring__fill--milestone {
+  stroke: var(--dt-accent-secondary);
+  filter: none;
+}
+
+.dov-ring__value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--dt-text-secondary);
+}
+
+.dov-loading {
+  width: 22px;
+  height: 22px;
+  margin: var(--dt-space-12) auto;
+  border: 1.5px solid var(--dt-card-border);
+  border-top-color: var(--dt-accent-primary);
+  border-radius: 50%;
+  animation: dovSpin 0.65s linear infinite;
+}
+
+@keyframes dovSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .dov-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .dov-stats { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 400px) {
+  .dov-stats { grid-template-columns: 1fr; }
+}

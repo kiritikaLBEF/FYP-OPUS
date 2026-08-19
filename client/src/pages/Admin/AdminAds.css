@@ -1,0 +1,19 @@
+.admin-ad-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-ad-preview__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-ad-preview__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--adm-text-secondary, #6e6e73);
+}

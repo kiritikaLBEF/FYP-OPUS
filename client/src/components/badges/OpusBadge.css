@@ -1,0 +1,81 @@
+.opus-badge {
+  display: inline-flex;
+  width: 44px;
+  height: 56px;
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.opus-badge--sm {
+  width: 32px;
+  height: 41px;
+}
+
+.opus-badge--lg {
+  width: 52px;
+  height: 66px;
+}
+
+.opus-badge__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.opus-badge__hit {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.opus-badge__hit:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.opus-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-end;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.opus-badge-row--center {
+  justify-content: center;
+  width: 100%;
+}
+
+.ep-identity-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  width: fit-content;
+  max-width: 160px;
+  margin: 0 auto;
+}
+
+.ep-identity-badges__hint {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.fl-profile-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  width: fit-content;
+}

@@ -1,0 +1,35 @@
+/* Admin panel tokens — from client/design-tokens.md */
+/* Also on .adm-modal so portaled modals inherit button/theme tokens */
+
+.admin-shell,
+.adm-modal {
+  --adm-bg: #f5f5f7;
+  --adm-surface: #ffffff;
+  --adm-surface-hover: #fafafa;
+  --adm-border: rgba(0, 0, 0, 0.1);
+  --adm-border-strong: rgba(0, 0, 0, 0.16);
+  --adm-text: #1d1d1f;
+  --adm-text-secondary: #6e6e73;
+  --adm-text-muted: #86868b;
+  --adm-accent: #0071e3;
+  --adm-accent-hover: #0077ed;
+  --adm-accent-soft: rgba(0, 113, 227, 0.16);
+  --adm-success: #34c759;
+  --adm-warning: #ff9500;
+  --adm-danger: #ff3b30;
+  --adm-radius: 12px;
+  --adm-radius-sm: 10px;
+  --adm-radius-xs: 8px;
+  --adm-radius-pill: 980px;
+  --adm-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --adm-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --adm-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --adm-duration: 180ms;
+  --adm-sidebar-w: 240px;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+}

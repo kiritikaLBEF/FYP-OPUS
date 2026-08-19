@@ -1,0 +1,444 @@
+.emp-status-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.emp-status-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-status-row-wrap {
+  border-bottom: 1px solid var(--separator);
+}
+
+.emp-status-row-wrap:last-child {
+  border-bottom: none;
+}
+
+.emp-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.emp-status-row__main h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.emp-status-row__main p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.emp-status-row__progress {
+  margin-top: 0.35rem !important;
+  color: #059669 !important;
+  font-weight: 500;
+}
+
+.emp-completed-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  white-space: nowrap;
+}
+
+.emp-status-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.bid-bell--active {
+  border-color: #0071e3;
+  background: var(--accent-blue-soft);
+}
+
+.emp-applicants-panel {
+  padding: 0 1.25rem 1.25rem;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--separator);
+}
+
+.emp-applicants-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 0 0.65rem;
+}
+
+.emp-applicants-panel__head h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.emp-applicants-panel__head span {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.emp-muted {
+  margin: 0;
+  padding: 0.5rem 0 1rem;
+  font-size: 0.82rem;
+  color: var(--text-tertiary);
+}
+
+.emp-applicants-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.emp-applicant {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+}
+
+.emp-applicant__info {
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.emp-applicant__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.emp-applicant__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.emp-applicant__info strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.emp-applicant__info p {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.emp-applicant__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.emp-applicant__skills span {
+  font-size: 0.68rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+.emp-applicant__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.emp-btn--danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.emp-btn--delete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  border-color: var(--border-strong);
+}
+
+.emp-delete-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.emp-delete-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+}
+
+.emp-delete-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-secondary);
+  border-radius: 14px;
+  padding: 1.35rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.emp-delete-modal__panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.emp-delete-modal__panel p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.emp-delete-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.emp-applicant__status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+}
+
+.emp-applicant__status--accepted {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.emp-applicant__status--rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.emp-applicant__status--pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.emp-multi-badge {
+  display: inline-block;
+  margin-left: 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: var(--accent-blue);
+  vertical-align: middle;
+}
+
+.emp-multi-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.emp-review-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 11px;
+  background: var(--bg-tertiary, #f4f4f5);
+  margin-bottom: 0.85rem;
+}
+
+.emp-review-tabs button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.emp-review-tabs button.is-active {
+  background: #fff;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.emp-role-block {
+  border: 1px solid var(--border-strong, #e4e4e7);
+  border-radius: 14px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  background: var(--bg-elevated, #fff);
+}
+
+.emp-role-block__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--separator, #f4f4f5);
+}
+
+.emp-role-block__head strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.emp-role-block__head p {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.emp-role-block__meta {
+  text-align: right;
+}
+
+.emp-role-block__meta em {
+  display: block;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.emp-role-pill {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.emp-role-pill.is-filled {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.emp-role-block .emp-applicants-list {
+  padding: 0.35rem 0.65rem 0.65rem;
+}
+
+.emp-squad-card {
+  border: 1px solid var(--border-strong, #e4e4e7);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.65rem;
+  background: var(--bg-elevated, #fff);
+}
+
+.emp-squad-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.emp-squad-card__top strong {
+  font-size: 0.95rem;
+}
+
+.emp-squad-card__top p {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.emp-squad-card__price {
+  text-align: right;
+}
+
+.emp-squad-card__price em {
+  display: block;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.emp-squad-card__price span {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.emp-squad-members {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.emp-squad-card__actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .emp-status-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .emp-applicant {
+    flex-direction: column;
+  }
+
+  .emp-applicant__actions {
+    justify-content: flex-start;
+  }
+}

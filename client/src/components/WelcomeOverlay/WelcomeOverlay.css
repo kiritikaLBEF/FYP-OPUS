@@ -1,0 +1,55 @@
+.opus-welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 20, 0.55);
+  backdrop-filter: blur(10px);
+  animation: opusWelcomeFadeIn 0.35s ease;
+}
+
+.opus-welcome-overlay__card {
+  text-align: center;
+  color: #fff;
+  animation: opusWelcomeCardIn 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.opus-welcome-overlay__orb {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1.25rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0071e3, #5ac8fa);
+  box-shadow: 0 0 60px rgba(0, 113, 227, 0.55);
+  animation: opusWelcomePulse 1.8s ease-in-out infinite;
+}
+
+.opus-welcome-overlay__card h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.opus-welcome-overlay__card p {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+@keyframes opusWelcomeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes opusWelcomeCardIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes opusWelcomePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}

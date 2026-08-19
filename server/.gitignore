@@ -1,0 +1,10 @@
+node_modules/
+uploads/profiles/*
+uploads/certificates/*
+uploads/projects/*
+uploads/job-covers/*
+!uploads/profiles/.gitkeep
+!uploads/certificates/.gitkeep
+!uploads/projects/.gitkeep
+!uploads/job-covers/.gitkeep
+.env

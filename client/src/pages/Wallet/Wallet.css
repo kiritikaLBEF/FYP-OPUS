@@ -1,0 +1,472 @@
+.wal-page {
+  position: relative;
+  z-index: 1;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 20px 24px 48px;
+}
+
+.wal-spinner {
+  width: 28px;
+  height: 28px;
+  margin: 80px auto;
+  border: 2px solid var(--separator);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: walSpin 0.7s linear infinite;
+}
+
+@keyframes walSpin { to { transform: rotate(360deg); } }
+
+.wal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.wal-toolbar__actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wal-toolbar__actions .opus-btn {
+  min-height: 38px;
+  padding: 0 16px;
+  font-size: 0.8125rem;
+}
+
+.wal-seg {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.wal-seg button {
+  padding: 6px 13px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.wal-seg button.on {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+}
+
+.wal-seg--sm { transform: scale(0.92); transform-origin: right center; }
+
+.wal-banner {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.wal-banner--ok {
+  background: rgba(52, 199, 89, 0.12);
+  color: #248a3d;
+}
+
+.wal-banner--err {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--accent-red);
+}
+
+.wal-pagehead { margin-bottom: 18px; }
+.wal-pagehead h1 {
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wal-pagehead p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.wal-hero {
+  display: flex;
+  gap: 28px;
+  padding: 22px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.wal-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 270px;
+  flex-shrink: 0;
+}
+
+.wal-paycard {
+  width: 100%;
+  height: 148px;
+  border-radius: 16px;
+  padding: 16px 18px;
+  color: #fff;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.35);
+  border: 0;
+  cursor: pointer;
+}
+
+.wal-paycard--esewa {
+  background: linear-gradient(145deg, #3d9a4a 0%, #1f7a30 62%, #145423 100%);
+}
+
+.wal-paycard--khalti {
+  background: linear-gradient(145deg, #6b4cc4 0%, #5b2d9e 58%, #3c1a7d 100%);
+}
+
+.wal-paycard__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.wal-paycard__brand { font-weight: 700; font-size: 15px; }
+.wal-paycard__tag {
+  font-size: 9.5px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.wal-paycard__num {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  opacity: 0.92;
+  margin: 0;
+}
+
+.wal-paycard__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.88;
+}
+
+.wal-paycard__bottom small {
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.75;
+  font-size: 10px;
+}
+
+.wal-balance { flex: 1; min-width: 0; }
+.wal-balance__eye {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.wal-balance__amt {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.wal-balance__amt span {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin-right: 6px;
+}
+.wal-balance__sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  max-width: 380px;
+  line-height: 1.5;
+}
+.wal-minis {
+  display: flex;
+  gap: 22px;
+  margin-top: 18px;
+}
+.wal-minis strong {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.wal-minis span {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+}
+.wal-balance__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.wal-balance__actions .opus-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 0.8125rem;
+}
+
+.wal-two {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+}
+
+.wal-side { display: flex; flex-direction: column; gap: 16px; }
+
+.wal-panel { padding: 0; overflow: hidden; }
+.wal-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 0.5px solid var(--separator);
+}
+.wal-panel__head h3 {
+  font-size: 14px;
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wal-panel__head p {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin: 2px 0 0;
+}
+
+.wal-empty {
+  padding: 22px 18px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.wal-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 84px 120px;
+  gap: 10px;
+  align-items: center;
+  padding: 13px 18px;
+  border-bottom: 0.5px solid var(--separator);
+}
+.wal-row:last-child { border-bottom: none; }
+.wal-row__date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.wal-row__desc strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.wal-row__desc small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.wal-row__amt {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: right;
+}
+.wal-row__amt.pos { color: #248a3d; }
+.wal-row__amt.neg { color: var(--accent-red); }
+
+.wal-tag {
+  font-size: 10px;
+  font-weight: 700;
+  font-style: normal;
+  padding: 1px 6px;
+  border-radius: 100px;
+}
+.wal-tag--esewa { background: #e2f3e4; color: #1f7a30; }
+.wal-tag--khalti { background: #ece2f8; color: #5729a6; }
+
+.wal-pill {
+  font-size: 10.5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-weight: 600;
+  text-align: center;
+  justify-self: start;
+}
+.wal-pill--in { background: rgba(52, 199, 89, 0.14); color: #248a3d; }
+.wal-pill--out { background: rgba(255, 59, 48, 0.12); color: var(--accent-red); }
+
+.wal-bd {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  padding: 10px 18px;
+  border-bottom: 0.5px solid var(--separator);
+  color: var(--text-primary);
+}
+.wal-bd:last-child { border-bottom: none; }
+.wal-bd strong { font-family: var(--font-mono); }
+
+.wal-set {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 0.5px solid var(--separator);
+}
+.wal-set:last-child { border-bottom: none; }
+.wal-set p { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.wal-set small { font-size: 11px; color: var(--text-secondary); }
+.wal-set__actions { display: flex; gap: 6px; }
+.wal-set__actions .opus-btn { min-height: 32px; padding: 0 12px; font-size: 12px; }
+
+.wal-switch {
+  width: 34px;
+  height: 20px;
+  border-radius: 100px;
+  background: #c9c5b8;
+  position: relative;
+  flex-shrink: 0;
+}
+.wal-switch--on { background: var(--accent-blue); }
+.wal-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.15s;
+}
+.wal-switch--on::after { left: 16px; }
+
+.wal-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 90px 16px 24px;
+}
+.wal-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  border: 0;
+}
+.wal-sheet__panel {
+  position: relative;
+  width: 380px;
+  max-width: 100%;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.wal-sheet__head {
+  padding: 18px 20px 12px;
+  text-align: center;
+  border-bottom: 0.5px solid var(--separator);
+  position: relative;
+}
+.wal-sheet__head h3 { margin: 0; font-size: 14.5px; font-weight: 700; }
+.wal-sheet__close {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.wal-sheet__body { padding: 20px; }
+.wal-methods { display: flex; gap: 8px; margin-bottom: 16px; }
+.wal-opt {
+  flex: 1;
+  border: 1.5px solid var(--separator);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-primary);
+}
+.wal-opt small { display: block; font-weight: 500; color: var(--text-tertiary); margin-top: 2px; }
+.wal-opt.sel {
+  border-color: var(--accent-blue);
+  background: var(--accent-blue-soft);
+  color: var(--accent-blue);
+}
+.wal-amt {
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+}
+.wal-phone {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--separator);
+  background: var(--input-bg, var(--bg-secondary));
+  font-size: 15px;
+  color: var(--text-primary);
+}
+.wal-hint { text-align: center; font-size: 11.5px; color: var(--text-tertiary); margin: 8px 0 14px; }
+.wal-fee {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  padding: 9px 0;
+  border-top: 0.5px solid var(--separator);
+  color: var(--text-secondary);
+}
+.wal-fee b { color: var(--text-primary); font-family: var(--font-mono); }
+.wal-sheet__actions { display: flex; gap: 8px; margin-top: 16px; }
+.wal-sheet__actions .opus-btn { flex: 1; min-height: 42px; }
+
+@media (max-width: 900px) {
+  .wal-hero, .wal-two { grid-template-columns: 1fr; flex-direction: column; }
+  .wal-hero { display: flex; }
+  .wal-cards { width: 100%; }
+  .wal-row { grid-template-columns: 64px 1fr 100px; }
+  .wal-pill { display: none; }
+}

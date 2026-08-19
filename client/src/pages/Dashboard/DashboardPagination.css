@@ -1,0 +1,41 @@
+.dash-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--dt-space-4);
+  padding-top: var(--dt-space-4);
+  border-top: 0.5px solid var(--dt-divider);
+}
+
+.dash-pager__btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: var(--dt-caption-size);
+  font-weight: 500;
+  color: var(--dt-text-secondary);
+  background: var(--dt-pager-bg);
+  border: 0.5px solid var(--dt-glass-border);
+  transition: background var(--dt-glass-hover-duration) var(--dt-spring), color var(--dt-transition), transform var(--dt-glass-hover-duration) var(--dt-spring);
+}
+
+.dash-pager__btn:hover {
+  color: var(--dt-text-primary);
+  background: var(--dt-pager-bg-hover);
+  transform: scale(1.06);
+}
+
+.dash-pager__btn--active {
+  color: #fff;
+  background: linear-gradient(180deg, #0077ed, #0071e3);
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+}
+
+.dash-pager__btn--active:hover {
+  color: #fff;
+  transform: scale(1.06);
+}

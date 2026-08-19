@@ -1,0 +1,119 @@
+/* Liquid Glass design tokens */
+
+.dashboard-token-scope {
+  --dt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+
+  --dt-bg-base: #f5f5f7;
+  --dt-bg-elevated: rgba(255, 255, 255, 0.72);
+  --dt-bg-card-hover: rgba(255, 255, 255, 0.85);
+  --dt-card-border: rgba(255, 255, 255, 0.72);
+  --dt-accent-primary: #0071e3;
+  --dt-accent-secondary: #34c759;
+  --dt-accent-tertiary: #ff9500;
+  --dt-accent-highlight: #0071e3;
+  --dt-warning: #ff9500;
+  --dt-error: #ff3b30;
+  --dt-text-primary: #1d1d1f;
+  --dt-text-secondary: #6e6e73;
+  --dt-text-muted: #86868b;
+  --dt-chart-line-1: #0071e3;
+  --dt-chart-line-2: #34c759;
+  --dt-chart-gradient-start: rgba(0, 113, 227, 0.22);
+  --dt-chart-gradient-end: rgba(0, 113, 227, 0);
+  --dt-chart-gradient-start-2: rgba(52, 199, 89, 0.22);
+  --dt-chart-gradient-end-2: rgba(52, 199, 89, 0);
+
+  --dt-wash-primary: rgba(0, 113, 227, 0.08);
+  --dt-wash-secondary: rgba(52, 199, 89, 0.08);
+  --dt-wash-highlight: rgba(0, 113, 227, 0.08);
+
+  --dt-accent-primary-12: rgba(0, 113, 227, 0.14);
+  --dt-accent-secondary-12: rgba(52, 199, 89, 0.14);
+  --dt-accent-highlight-12: rgba(0, 113, 227, 0.14);
+
+  --dt-h1-size: 1.625rem;
+  --dt-h1-weight: 600;
+  --dt-h1-spacing: -0.03em;
+  --dt-h2-size: 1rem;
+  --dt-h2-weight: 600;
+  --dt-h3-size: 0.8125rem;
+  --dt-h3-weight: 600;
+  --dt-body-size: 0.8125rem;
+  --dt-body-weight: 400;
+  --dt-caption-size: 0.6875rem;
+  --dt-caption-weight: 400;
+  --dt-stat-number-size: 1.375rem;
+  --dt-stat-number-weight: 600;
+  --dt-stat-number-spacing: -0.025em;
+  --dt-stat-label-size: 0.6875rem;
+  --dt-stat-label-weight: 500;
+  --dt-stat-label-spacing: 0.03em;
+
+  --dt-space-1: 4px;
+  --dt-space-2: 6px;
+  --dt-space-3: 10px;
+  --dt-space-4: 12px;
+  --dt-space-6: 16px;
+  --dt-space-8: 20px;
+  --dt-space-12: 28px;
+  --dt-page-padding: 20px 24px 32px;
+  --dt-card-padding: 16px 18px;
+  --dt-card-gap: 14px;
+  --dt-section-gap: 22px;
+
+  --dt-radius: 14px;
+  --dt-shadow-rest: none;
+  --dt-shadow-hover: none;
+  --dt-hover-lift: -2px;
+
+  /* Liquid glass */
+  --dt-glass-radius: 20px;
+  --dt-glass-blur: 28px;
+  --dt-glass-saturate: 185%;
+  --dt-glass-bg: rgba(255, 255, 255, 0.52);
+  --dt-glass-border: rgba(255, 255, 255, 0.75);
+  --dt-glass-highlight: rgba(255, 255, 255, 0.9);
+  --dt-glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --dt-glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 113, 227, 0.08);
+  --dt-glass-reveal-duration: 0.7s;
+  --dt-glass-hover-duration: 0.45s;
+  --dt-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+
+  --dt-transition: 220ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --dt-card-hover-duration: 450ms;
+  --dt-count-up-duration: 900ms;
+
+  --dt-icon-container: 32px;
+  --dt-ring-track: rgba(134, 134, 139, 0.2);
+
+  /* Surfaces (theme-aware via dashboard-theme.css) */
+  --dt-surface-inner: rgba(255, 255, 255, 0.28);
+  --dt-surface-inner-hover: rgba(255, 255, 255, 0.48);
+  --dt-surface-subtle: rgba(255, 255, 255, 0.4);
+  --dt-welcome-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(0, 113, 227, 0.08) 100%);
+  --dt-orb-gradient: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(0, 113, 227, 0.35) 45%, rgba(52, 199, 89, 0.25) 100%);
+  --dt-orb-shadow: inset 0 -8px 16px rgba(0, 113, 227, 0.2), 0 8px 24px rgba(0, 113, 227, 0.15);
+  --dt-input-bg: rgba(255, 255, 255, 0.45);
+  --dt-input-border: rgba(255, 255, 255, 0.65);
+  --dt-input-highlight: rgba(255, 255, 255, 0.6);
+  --dt-tab-active-bg: rgba(255, 255, 255, 0.75);
+  --dt-tab-track-bg: rgba(255, 255, 255, 0.35);
+  --dt-divider: rgba(255, 255, 255, 0.45);
+  --dt-tag-bg: rgba(255, 255, 255, 0.4);
+  --dt-pager-bg: rgba(255, 255, 255, 0.35);
+  --dt-pager-bg-hover: rgba(255, 255, 255, 0.65);
+  --dt-spinner-border: rgba(255, 255, 255, 0.5);
+
+  font-family: var(--dt-font);
+  color: var(--dt-text-primary);
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 768px) {
+  .dashboard-token-scope {
+    --dt-page-padding: 16px 16px 28px;
+    --dt-glass-radius: 18px;
+    --dt-glass-blur: 22px;
+  }
+}

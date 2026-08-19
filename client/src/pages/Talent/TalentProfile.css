@@ -1,0 +1,35 @@
+.talent-page {
+  width: min(100%, 800px);
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+}
+
+.talent-page__back {
+  display: inline-flex;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.talent-page__back:hover {
+  text-decoration: underline;
+}
+
+.talent-page__panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--separator);
+  border-radius: 12px;
+  padding: 28px;
+}
+
+.talent-page__panel .fl-profile-hero h2 {
+  font-size: 1.6rem;
+}
+
+.talent-page__panel .fl-profile-hero__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+}

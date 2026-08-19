@@ -1,0 +1,115 @@
+.crop-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: var(--overlay);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.crop-modal {
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.crop-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.crop-modal__head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.crop-modal__head button {
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crop-modal__hint {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.crop-modal__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0c0c0d;
+  cursor: grab;
+  touch-action: none;
+}
+
+.crop-modal__frame:active {
+  cursor: grabbing;
+}
+
+.crop-modal__img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.crop-modal__zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.crop-modal__zoom input {
+  flex: 1;
+}
+
+.crop-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.crop-modal__btn {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-secondary);
+  border-radius: 9px;
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.crop-modal__btn--primary {
+  border: none;
+  background: #0071e3;
+  color: #fff;
+  font-weight: 600;
+}
