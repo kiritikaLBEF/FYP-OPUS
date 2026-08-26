@@ -15,6 +15,7 @@ const baseNavItems = [
   { to: '/admin/badges', label: 'Badges' },
   { to: '/admin/flags', label: 'Flags & Suspensions' },
   { to: '/admin/templates', label: 'Email Templates' },
+  { to: '/community', label: 'Community', end: true },
 ];
 
 export default function AdminLayout() {

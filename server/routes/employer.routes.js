@@ -12,6 +12,7 @@ import {
   getMyJobs,
   createJob,
   getJobStatus,
+  getStatusUpdateCount,
   getEmployerMessages,
   getJobApplications,
   getApplicantProfile,
@@ -40,6 +41,7 @@ router.get('/jobs', requireEmployerVerified, getMyJobs);
 router.post('/jobs', requireEmployerVerified, uploadJobCover.single('coverImage'), createJob);
 router.delete('/jobs/:jobId', requireEmployerVerified, deleteEmployerJob);
 router.get('/status', requireEmployerVerified, getJobStatus);
+router.get('/status-count', getStatusUpdateCount);
 router.get('/jobs/:jobId/applications', requireEmployerVerified, getJobApplications);
 router.get('/applicants/:freelancerId/profile', requireEmployerVerified, getApplicantProfile);
 router.post('/applications/:applicationId/accept', requireEmployerVerified, acceptApplication);

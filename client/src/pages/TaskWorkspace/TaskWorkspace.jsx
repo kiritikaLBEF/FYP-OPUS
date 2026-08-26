@@ -930,7 +930,7 @@ function Certificate({
         <p className="tw-hint">This certificate was emailed to you and added to your profile Certifications.</p>
       )}
       {role === 'employer' && (
-        <p className="tw-hint">The PDF was emailed to the freelancer and added to their OPUS profile.</p>
+        <p className="tw-hint">Issued automatically after payment. The PDF was emailed to the freelancer and added to their OPUS profile.</p>
       )}
     </div>
   );
@@ -1679,28 +1679,6 @@ export default function TaskWorkspace() {
                     loading={actionLoading}
                     onPaid={(fn) => run(fn)}
                   />
-                )}
-
-                {role === 'employer' && status === 'paid' && (
-                  <div className="tw-card tw-cta">
-                    <div className="tw-cta__with-icon">
-                      {Icon.award}
-                      <div>
-                        <p className="tw-cta__title">Issue certificate of completion</p>
-                        <p className="tw-cta__sub">
-                          Creates a PDF, emails it to the freelancer, and adds it to their profile.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="tw-btn tw-btn--primary"
-                      disabled={actionLoading}
-                      onClick={() => run(() => api.issueWorkCertificate(session.id))}
-                    >
-                      Issue certificate
-                    </button>
-                  </div>
                 )}
 
                 {status === 'certified' && session.certificateId && (

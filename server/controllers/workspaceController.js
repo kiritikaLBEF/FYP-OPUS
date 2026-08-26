@@ -6,6 +6,7 @@ import { sendEmail } from '../utils/email.js';
 import { generateCertificatePdf } from '../utils/certificatePdf.js';
 import { notifyUser } from '../utils/notify.js';
 import { settleJobToFreelancerWallet, splitJobPayment } from '../utils/walletLedger.js';
+import { issueCertificateForPaidSession } from '../utils/workCertificate.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -357,6 +358,13 @@ export const listMyWorkSessions = async (req, res) => {
     const serialized = [];
     for (const raw of sessions) {
       const session = await hydrateSessionFromJob(raw);
+      if (session.status === 'paid') {
+        try {
+          await issueCertificateForPaidSession(session);
+        } catch (certErr) {
+          console.error('Auto-issue certificate on workspace list failed:', certErr.message);
+        }
+      }
       serialized.push(await serializeSessionAsync(session, isFreelancer ? 'freelancer' : 'employer'));
     }
     res.json({
@@ -374,6 +382,13 @@ export const getWorkSession = async (req, res) => {
     const loaded = await loadSessionOr404(req, res);
     if (!loaded) return;
     const session = await hydrateSessionFromJob(loaded.session);
+    if (session.status === 'paid') {
+      try {
+        await issueCertificateForPaidSession(session);
+      } catch (certErr) {
+        console.error('Auto-issue certificate on workspace load failed:', certErr.message);
+      }
+    }
     res.json({ session: await serializeSessionAsync(session, loaded.role) });
   } catch (err) {
     console.error('Get work session error:', err);
@@ -662,7 +677,7 @@ export const reviewProgressUpdate = async (req, res) => {
 
     const reviewNotices = {
       approved_new_draft: {
-        title: 'Draft approved — new draft needed',
+        title: 'Draft approved - new draft needed',
         message: `${session.organizationName || 'The organization'} approved draft ${update.number} for "${session.title}" and asked for another draft.`,
       },
       approved_complete: {
@@ -1157,124 +1172,10 @@ export const issueCertificate = async (req, res) => {
     const loaded = await loadSessionOr404(req, res);
     if (!loaded) return;
     const { session, role } = loaded;
-    if (role !== 'employer') {
-      return res.status(403).json({ message: 'Only the organization can issue a certificate' });
+    if (session.status !== 'paid' && session.status !== 'certified') {
+      return res.status(400).json({ message: 'Certificate is issued automatically after payment' });
     }
-    if (session.status !== 'paid') {
-      return res.status(400).json({ message: 'Certificate can only be issued after payment' });
-    }
-    if (!session.certificateId) {
-      session.certificateId = makeRef('OPUS-CERT', `${session._id}-cert`);
-    }
-
-    const freelancer = await User.findById(session.freelancerId);
-    if (!freelancer) {
-      return res.status(404).json({ message: 'Freelancer not found' });
-    }
-    const freelancerName = displayUserName(freelancer);
-    const issuedAt = new Date();
-
-    ensureCertificatesDir();
-    const pdfBuffer = await generateCertificatePdf({
-      certificateId: session.certificateId,
-      freelancerName,
-      taskTitle: session.title,
-      organizationName: session.organizationName,
-      issuedAt,
-    });
-    const safeId = String(session.certificateId).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const fileName = `${safeId}.pdf`;
-    const absolutePath = path.join(certificatesDir, fileName);
-    fs.writeFileSync(absolutePath, pdfBuffer);
-    session.certificateFilePath = `/uploads/certificates/${fileName}`;
-
-    session.status = 'certified';
-    session.certifiedAt = issuedAt;
-
-    // Auto-add to freelancer profile
-    const already = (freelancer.certifications || []).some(
-      (c) => c.credentialId === session.certificateId,
-    );
-    if (!already) {
-      freelancer.certifications.push({
-        name: `Certificate of Completion: ${session.title}`,
-        organization: session.organizationName,
-        issueDate: issuedAt,
-        credentialId: session.certificateId,
-        credentialUrl: '',
-        filePath: session.certificateFilePath,
-      });
-      await freelancer.save();
-    } else {
-      const cert = freelancer.certifications.find((c) => c.credentialId === session.certificateId);
-      if (cert && !cert.filePath) {
-        cert.filePath = session.certificateFilePath;
-        await freelancer.save();
-      }
-    }
-    session.certificateAddedToProfile = true;
-
-    if (freelancer.email) {
-      const org = session.organizationName || 'The organization';
-      const subject = `Your OPUS certificate for "${session.title}"`;
-      const body =
-        `Hi ${freelancerName},\n\n`
-        + `${org} has issued your Certificate of Completion for "${session.title}" on OPUS.\n\n`
-        + `Certificate ID: ${session.certificateId}\n\n`
-        + `The PDF is attached to this email. It has also been added to your OPUS profile under Certifications.\n\n`
-        + `You can download it anytime from your Task Workspace or profile.\n\n`
-        + `Congratulations,\nThe OPUS team`;
-      const html = `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#14161F;">
-          <h2 style="margin:0 0 12px;font-size:20px;color:#0284c7;">Certificate of Completion</h2>
-          <p style="margin:0 0 14px;font-size:15px;line-height:1.55;">Hi ${freelancerName},</p>
-          <p style="margin:0 0 14px;font-size:15px;line-height:1.55;">
-            <strong>${org}</strong> has issued your Certificate of Completion for
-            <strong>"${session.title}"</strong> on OPUS.
-          </p>
-          <p style="margin:0 0 14px;font-size:14px;line-height:1.55;color:#475569;">
-            Certificate ID: <code>${session.certificateId}</code>
-          </p>
-          <p style="margin:0 0 14px;font-size:15px;line-height:1.55;">
-            The PDF is attached to this email and has also been added to your OPUS profile under Certifications.
-            You can download it anytime from your Task Workspace or profile.
-          </p>
-          <p style="margin:24px 0 0;font-size:13px;color:#6B7280;">Congratulations,<br/>The OPUS team</p>
-        </div>
-      `;
-      try {
-        await sendEmail(freelancer.email, subject, body, {
-          fromName: 'OPUS Certificates',
-          html,
-          attachments: [
-            {
-              filename: `OPUS-Certificate-${safeId}.pdf`,
-              content: pdfBuffer,
-              contentType: 'application/pdf',
-            },
-          ],
-        });
-      } catch (emailErr) {
-        console.error('Certificate email failed:', emailErr.message);
-      }
-    }
-
-    session.messages.push({
-      authorId: req.user._id,
-      authorRole: 'employer',
-      text: `Issued Certificate of Completion (${session.certificateId}) and emailed it to ${freelancerName}.`,
-    });
-
-    await session.save();
-
-    await notifyUser({
-      userId: session.freelancerId,
-      type: 'certificate_issued',
-      title: 'Certificate issued',
-      message: `${session.organizationName || 'The organization'} issued your certificate for "${session.title}". Work is complete.`,
-      link: `/dashboard/workspace/${session._id}`,
-      meta: { workspaceId: session._id, jobId: session.jobPostingId },
-    });
+    await issueCertificateForPaidSession(session);
     res.json({
       message: 'Certificate issued, emailed to the freelancer, and added to their profile',
       session: await serializeSessionAsync(session, role),

@@ -3,6 +3,7 @@ import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
 import ActivityEvent from '../models/ActivityEvent.js';
 import { notifyUser } from './notify.js';
+import { issueCertificateForPaidSession } from './workCertificate.js';
 
 export const PLATFORM_FEE_RATE = 0.10;
 
@@ -281,6 +282,12 @@ export async function settleJobToFreelancerWallet({
     link: '/wallet',
     meta: { workspaceId: session._id, jobId: session.jobPostingId, amount: net, gross, fee },
   });
+
+  try {
+    await issueCertificateForPaidSession(session);
+  } catch (certErr) {
+    console.error('Auto-issue certificate after payment failed:', certErr.message);
+  }
 
   return { amount: gross, fee, net, feeRate, session };
 }

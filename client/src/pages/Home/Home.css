@@ -532,6 +532,8 @@
 
 .home-ad-carousel {
   position: relative;
+  width: 100%;
+  max-width: 100%;
 }
 
 .home-performer-grid {

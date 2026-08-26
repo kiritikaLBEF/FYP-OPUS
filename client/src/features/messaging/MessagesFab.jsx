@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMessaging } from './MessagingProvider';
 import './messaging.css';
 
-/** Floating entry — opens the full Messages page (dock opens only on incoming messages). */
+/** Floating entry - opens the full Messages page (dock opens only on incoming messages). */
 export default function MessagesFab({ messagesPath = '/employer/messages' }) {
   const navigate = useNavigate();
   const { enabled, unreadTotal, dockIds } = useMessaging();

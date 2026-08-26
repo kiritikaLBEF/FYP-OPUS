@@ -117,3 +117,17 @@ export const uploadChatFiles = multer({
     cb(ok ? null : new Error('File type not allowed in chat'), ok);
   },
 });
+
+export const uploadCommunityFiles = multer({
+  storage: makeStorage('community'),
+  limits: { fileSize: 40 * 1024 * 1024, files: 5 },
+  fileFilter: (_req, file, cb) => {
+    const allowedExt = /jpeg|jpg|png|gif|webp|mp3|wav|ogg|m4a|aac|mp4|webm|mov|avi/;
+    const ext = path.extname(file.originalname).toLowerCase().slice(1);
+    const ok = allowedExt.test(ext)
+      || file.mimetype.startsWith('image/')
+      || file.mimetype.startsWith('audio/')
+      || file.mimetype.startsWith('video/');
+    cb(ok ? null : new Error('Only images, audio, and video are allowed in Community'), ok);
+  },
+});

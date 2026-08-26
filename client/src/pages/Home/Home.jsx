@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthModal } from '../../context/AuthModalContext';
 import { useAuth } from '../../context/AuthContext';
 import { useReveal } from '../../hooks/useReveal';
@@ -37,9 +37,22 @@ export default function Home() {
   const { openSignUp } = useAuthModal();
   const { user, isFreelancer } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [ads, setAds] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [adIndex, setAdIndex] = useState(0);
+
+  useEffect(() => {
+    const id = String(location.hash || '').replace(/^#/, '');
+    if (id) {
+      const t = window.setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 40);
+      return () => window.clearTimeout(t);
+    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    return undefined;
+  }, [location.pathname, location.hash]);
 
   useEffect(() => {
     api.getHomepage()

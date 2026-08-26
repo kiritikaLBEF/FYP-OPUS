@@ -17,6 +17,7 @@ import notificationRoutes from './routes/notification.routes.js';
 import messagingRoutes from './routes/messaging.routes.js';
 import homepageRoutes from './routes/homepage.routes.js';
 import walletRoutes from './routes/wallet.routes.js';
+import communityRoutes from './routes/community.routes.js';
 import { verifyEmailConfig, getEmailTransportMode } from './utils/email.js';
 import { ensureSuperAdmin, getSuperAdminEmail } from './utils/adminConfig.js';
 import { ensureDefaultBadges } from './utils/homepageBadges.js';
@@ -66,6 +67,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/messaging', messagingRoutes);
 app.use('/api/homepage', homepageRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/community', communityRoutes);
 app.use('/api/admin', adminRoutes);
 
 const start = async () => {

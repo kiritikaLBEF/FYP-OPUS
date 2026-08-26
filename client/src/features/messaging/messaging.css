@@ -1,4 +1,4 @@
-/* macOS Messages–inspired messaging UI */
+/* macOS Messages-inspired messaging UI */
 
 .msg-page {
   max-width: 1100px;
@@ -879,7 +879,7 @@
   opacity: 0.85;
 }
 
-/* Floating dock — only for incoming messages / calls */
+/* Floating dock - only for incoming messages / calls */
 .msg-dock {
   position: fixed;
   right: 16px;

@@ -22,3 +22,5 @@ server/uploads/projects/*
 server/uploads/job-covers/*
 server/uploads/workspace/*
 !server/uploads/**/.gitkeep
+server/uploads/community/*
+!server/uploads/**/.gitkeep

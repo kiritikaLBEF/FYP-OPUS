@@ -59,6 +59,9 @@ export default function ProfileMenu() {
               <button type="button" className="profile-menu__item" role="menuitem" onClick={() => { setOpen(false); navigate('/messages'); }}>
                 Messages
               </button>
+              <button type="button" className="profile-menu__item" role="menuitem" onClick={() => { setOpen(false); navigate('/community'); }}>
+                Community
+              </button>
               <button type="button" className="profile-menu__item" role="menuitem" onClick={() => { setOpen(false); navigate('/find-jobs'); }}>
                 Find work
               </button>
@@ -67,9 +70,14 @@ export default function ProfileMenu() {
               </button>
             </>
           ) : (
-            <button type="button" className="profile-menu__item" role="menuitem" onClick={() => { setOpen(false); navigate(getPostLoginPath(user)); }}>
-              Dashboard
-            </button>
+            <>
+              <button type="button" className="profile-menu__item" role="menuitem" onClick={() => { setOpen(false); navigate(getPostLoginPath(user)); }}>
+                Dashboard
+              </button>
+              <button type="button" className="profile-menu__item" role="menuitem" onClick={() => { setOpen(false); navigate('/community'); }}>
+                Community
+              </button>
+            </>
           )}
           <div className="profile-menu__sep" />
           <button type="button" className="profile-menu__item profile-menu__item--danger" role="menuitem" onClick={() => { setOpen(false); openLogoutConfirm(); }}>

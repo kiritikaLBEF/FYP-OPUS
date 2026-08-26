@@ -266,7 +266,7 @@ export const respondSquadInvite = async (req, res) => {
       title: accept ? 'Squad invite accepted' : 'Squad invite declined',
       message: accept
         ? `${displayName(req.user)} accepted their role on "${squad.name}".`
-        : `${displayName(req.user)} declined their invite — squad bid was withdrawn.`,
+        : `${displayName(req.user)} declined their invite - squad bid was withdrawn.`,
       link: '/dashboard',
       meta: { squadId: squad._id, jobId: squad.jobPostingId },
     });
@@ -433,7 +433,7 @@ export const acceptSquadBid = async (req, res) => {
       { status: 'rejected', reviewedAt: new Date() },
     );
 
-    res.json({ message: 'Squad accepted — all roles filled', workspaces });
+    res.json({ message: 'Squad accepted - all roles filled', workspaces });
   } catch (err) {
     console.error('Accept squad bid error:', err);
     res.status(500).json({ message: 'Failed to accept squad bid' });
@@ -545,7 +545,7 @@ export const acceptRoleApplication = async (req, res) => {
     });
 
     res.json({
-      message: filled ? 'Role filled — all roles complete, job filled' : 'Role filled',
+      message: filled ? 'Role filled - all roles complete, job filled' : 'Role filled',
       application: { id: application._id, status: 'accepted', workspaceId: session?._id },
       jobFilled: filled,
       rolesFilled: (job.roles || []).filter((r) => r.status === 'filled').length,

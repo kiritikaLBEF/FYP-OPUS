@@ -35,6 +35,7 @@ import FreelancerMessages from './pages/Messages/FreelancerMessages';
 import TalentProfile from './pages/Talent/TalentProfile';
 import Wallet from './pages/Wallet/Wallet';
 import WalletCallback from './pages/Wallet/WalletCallback';
+import Community from './pages/Community/Community';
 
 export default function App() {
   return (
@@ -82,6 +83,22 @@ export default function App() {
             element={(
               <ProtectedRoute allowedRoles={['freelancer']}>
                 <FreelancerMessages />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="community"
+            element={(
+              <ProtectedRoute allowedRoles={['freelancer', 'employer', 'admin']}>
+                <Community />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="community/:groupId"
+            element={(
+              <ProtectedRoute allowedRoles={['freelancer', 'employer', 'admin']}>
+                <Community />
               </ProtectedRoute>
             )}
           />

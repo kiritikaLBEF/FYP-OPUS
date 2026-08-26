@@ -163,6 +163,7 @@ export const api = {
   getMySquadInvites: () => request('/api/jobs/mine/squad-invites'),
   getMySquadBids: () => request('/api/jobs/mine/squad-bids'),
   getEmployerJobStatus: () => request('/api/employer/status'),
+  getEmployerStatusCount: () => request('/api/employer/status-count'),
   getEmployerJobApplications: (jobId) => request(`/api/employer/jobs/${jobId}/applications`),
   getEmployerApplicantProfile: (freelancerId) => request(`/api/employer/applicants/${freelancerId}/profile`),
   acceptEmployerApplication: (applicationId) => request(`/api/employer/applications/${applicationId}/accept`, { method: 'POST' }),
@@ -323,6 +324,72 @@ export const api = {
     const q = new URLSearchParams({ preset, from, to }).toString();
     return request(`/api/dashboard/estatement?${q}`);
   },
+
+  getMyCommunityGroups: () => request('/api/community/groups/mine'),
+  getCommunityUnread: () => request('/api/community/unread-count'),
+  markCommunityGroupRead: (groupId) =>
+    request(`/api/community/groups/${groupId}/read`, { method: 'POST' }),
+  discoverCommunityGroups: (q = '') => {
+    const qs = q ? `?${new URLSearchParams({ q })}` : '';
+    return request(`/api/community/groups/discover${qs}`);
+  },
+  createCommunityGroup: (body) =>
+    request('/api/community/groups', { method: 'POST', body: JSON.stringify(body) }),
+  getCommunityGroup: (groupId) => request(`/api/community/groups/${groupId}`),
+  updateCommunityGroup: (groupId, body) =>
+    request(`/api/community/groups/${groupId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteCommunityGroup: (groupId) =>
+    request(`/api/community/groups/${groupId}`, { method: 'DELETE' }),
+  joinPublicCommunityGroup: (groupId) =>
+    request(`/api/community/groups/${groupId}/join`, { method: 'POST' }),
+  leaveCommunityGroup: (groupId) =>
+    request(`/api/community/groups/${groupId}/leave`, { method: 'POST' }),
+  getCommunityMembers: (groupId) => request(`/api/community/groups/${groupId}/members`),
+  updateCommunityMember: (groupId, userId, body) =>
+    request(`/api/community/groups/${groupId}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  createCommunityInvite: (groupId, body = {}) =>
+    request(`/api/community/groups/${groupId}/invites`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  listCommunityInvites: (groupId) => request(`/api/community/groups/${groupId}/invites`),
+  revokeCommunityInvite: (inviteId) =>
+    request(`/api/community/invites/${inviteId}/revoke`, { method: 'POST' }),
+  resolveCommunityInvite: (code) => request(`/api/community/invite/${code}`),
+  joinCommunityByInvite: (code) =>
+    request(`/api/community/invite/${code}/join`, { method: 'POST' }),
+  getCommunityMessages: (groupId, { cursor = '', limit = 40 } = {}) => {
+    const q = new URLSearchParams({ limit: String(limit) });
+    if (cursor) q.set('cursor', cursor);
+    return request(`/api/community/groups/${groupId}/messages?${q}`);
+  },
+  sendCommunityMessage: (groupId, { text = '', kind = 'regular', clientMsgId = '', files = [] } = {}) => {
+    if (files?.length) {
+      const formData = new FormData();
+      if (text) formData.append('text', text);
+      formData.append('kind', kind);
+      if (clientMsgId) formData.append('clientMsgId', clientMsgId);
+      files.forEach((f) => formData.append('files', f));
+      return request(`/api/community/groups/${groupId}/messages`, {
+        method: 'POST',
+        body: formData,
+      });
+    }
+    return request(`/api/community/groups/${groupId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text, kind, clientMsgId }),
+    });
+  },
+  deleteCommunityMessage: (messageId) =>
+    request(`/api/community/messages/${messageId}`, { method: 'DELETE' }),
+  pinCommunityMessage: (messageId, pinned = true) =>
+    request(`/api/community/messages/${messageId}/pin`, {
+      method: 'POST',
+      body: JSON.stringify({ pinned }),
+    }),
 };
 
 export const getEStatementPdfUrl = (params) => {

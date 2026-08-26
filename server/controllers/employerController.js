@@ -463,6 +463,23 @@ export const getJobStatus = async (req, res) => {
   }
 };
 
+export const getStatusUpdateCount = async (req, res) => {
+  try {
+    const employerId = req.user._id;
+    const [pendingApps, pendingSquads, actionSessions] = await Promise.all([
+      JobApplication.countDocuments({ employerId, status: 'pending' }),
+      SquadBid.countDocuments({ employerId, status: 'submitted' }),
+      WorkSession.countDocuments({
+        employerId,
+        status: { $in: ['final_submitted', 'awaiting_payment'] },
+      }),
+    ]);
+    res.json({ pending: pendingApps + pendingSquads + actionSessions });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load status updates' });
+  }
+};
+
 export const getJobApplications = async (req, res) => {
   try {
     const job = await JobPosting.findOne({
@@ -713,7 +730,7 @@ const reviewApplication = async (req, res, nextStatus) => {
           type: reunited ? 'collaboration_again' : 'conversation_started',
           title: reunited ? `Working together again (${count})` : 'Messaging connected',
           message: reunited
-            ? `${orgName} accepted another bid. You're collaborating for the ${count} time — continue in the same Messages thread.`
+            ? `${orgName} accepted another bid. You're collaborating for the ${count} time - continue in the same Messages thread.`
             : `${orgName} is now connected with you in Messages. Start a conversation anytime.`,
           link: '/messages',
           meta: {

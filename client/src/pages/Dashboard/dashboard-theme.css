@@ -1,4 +1,4 @@
-/* Dashboard dark mode — follows html[data-theme] from ThemeContext */
+/* Dashboard dark mode - follows html[data-theme] from ThemeContext */
 
 [data-theme='dark'] .db-page--single {
   background: var(--bg-primary);

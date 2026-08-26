@@ -19,7 +19,7 @@ const ordinal = (n) => {
 
 const collabMessage = (n, jobTitle) => {
   if (n <= 1) return 'Start a conversation';
-  if (n === 2) return `2nd work together on "${jobTitle}" — start your work!`;
+  if (n === 2) return `2nd work together on "${jobTitle}" - start your work!`;
   return `${ordinal(n)} work together on "${jobTitle}"!`;
 };
 

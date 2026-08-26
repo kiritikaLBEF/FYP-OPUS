@@ -1,4 +1,4 @@
-# Dashboard Design Tokens (v2 — Light & Vibrant)
+# Dashboard Design Tokens (v2 - Light & Vibrant)
 
 ## Colors
 - Background base: #F8F9FC
@@ -7,7 +7,7 @@
 - Card border: rgba(17, 24, 39, 0.06)
 - Primary accent (actions/highlights): #7C5CFF
 - Secondary accent (growth/success): #16D9A0
-- Tertiary accent (energy/highlight — use sparingly for badges/achievements): #FF7A59
+- Tertiary accent (energy/highlight - use sparingly for badges/achievements): #FF7A59
 - Highlight accent (bids/opportunities): #FFC85C
 - Warning: #FFB020
 - Error: #FF5C5C
@@ -17,7 +17,7 @@
 - Chart line 1 (earnings): #7C5CFF
 - Chart line 2 (projects): #16D9A0
 - Chart gradient fill opacity: 0.18 → 0
-- Card accent backgrounds (subtle tint per stat type, use @6% opacity of accent color as card background wash — e.g. earnings card = primary accent tint, projects card = secondary accent tint, bids card = highlight accent tint)
+- Card accent backgrounds (subtle tint per stat type, use @6% opacity of accent color as card background wash - e.g. earnings card = primary accent tint, projects card = secondary accent tint, bids card = highlight accent tint)
 
 ## Typography
 - Font: "Inter", -apple-system, "SF Pro Display", sans-serif

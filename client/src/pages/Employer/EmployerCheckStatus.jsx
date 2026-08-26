@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { api, getProfileUrl } from '../../services/api';
 import EmployerLockedGate from './EmployerLockedGate';
 import FreelancerProfileModal from '../../components/jobs/FreelancerProfileModal';
@@ -25,6 +25,7 @@ function BidBell({ count, active, onClick }) {
 
 export default function EmployerCheckStatus() {
   const navigate = useNavigate();
+  const { refreshStatusCount } = useOutletContext() || {};
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState(null);
@@ -47,7 +48,10 @@ export default function EmployerCheckStatus() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { loadStatus(); }, [loadStatus]);
+  useEffect(() => {
+    loadStatus();
+    refreshStatusCount?.();
+  }, [loadStatus, refreshStatusCount]);
 
   const loadApplications = async (jobId) => {
     if (expandedJobId === jobId) {
@@ -89,6 +93,7 @@ export default function EmployerCheckStatus() {
       else await api.rejectEmployerApplication(applicationId);
       await refreshExpanded();
       loadStatus();
+      refreshStatusCount?.();
     } catch (err) {
       alert(err.message || 'Action failed');
     } finally {
@@ -103,6 +108,7 @@ export default function EmployerCheckStatus() {
       else await api.rejectSquadBid(squadId);
       await refreshExpanded();
       loadStatus();
+      refreshStatusCount?.();
     } catch (err) {
       alert(err.message || 'Action failed');
     } finally {
@@ -121,6 +127,7 @@ export default function EmployerCheckStatus() {
       }
       setDeleteTarget(null);
       loadStatus();
+      refreshStatusCount?.();
     } catch (err) {
       alert(err.message || 'Failed to delete job');
     } finally {

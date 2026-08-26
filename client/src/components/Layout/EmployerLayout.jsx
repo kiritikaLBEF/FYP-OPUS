@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { to: '/employer/post-jobs', label: 'Post Jobs', icon: 'post', locked: true },
   { to: '/employer/check-status', label: 'Check Status', icon: 'status', locked: true },
   { to: '/employer/messages', label: 'Messages', icon: 'messages', locked: true },
+  { to: '/community', label: 'Community', icon: 'community', locked: false },
   { to: '/employer/notifications', label: 'Notifications', icon: 'bell', locked: false },
 ];
 
@@ -27,6 +28,7 @@ function NavIcon({ name }) {
     messages: <path d="M5 6h14a1 1 0 011 1v9a1 1 0 01-1 1H8l-4 3V7a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />,
     bell: <><path d="M12 4a4 4 0 014 4v3l2 2H6l2-2V8a4 4 0 014-4z" stroke="currentColor" strokeWidth="1.5" fill="none" /><path d="M10 18a2 2 0 004 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>,
     wallet: <><rect x="3" y="7" width="18" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" /><path d="M3 11h18" stroke="currentColor" strokeWidth="1.5" /><path d="M16 15h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></>,
+    community: <><circle cx="9" cy="10" r="3" stroke="currentColor" strokeWidth="1.5" fill="none" /><circle cx="16" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" /><path d="M4 18c.8-2.2 2.6-3.5 5-3.5s4.2 1.3 5 3.5M13.5 18c.4-1.2 1.4-2 2.5-2s2.1.8 2.5 2" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></>,
     lock: <><rect x="7" y="10" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none" /><path d="M9 10V8a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.5" fill="none" /></>,
   };
   return (
@@ -42,6 +44,8 @@ export default function EmployerLayout() {
   const { unreadTotal: msgUnread } = useMessaging();
   const isVerified = user?.verificationStatus === 'verified';
   const [unread, setUnread] = useState(0);
+  const [statusPending, setStatusPending] = useState(0);
+  const [communityUnread, setCommunityUnread] = useState(0);
 
   const refreshUnread = useCallback(async () => {
     try {
@@ -52,16 +56,47 @@ export default function EmployerLayout() {
     }
   }, []);
 
+  const refreshCommunityUnread = useCallback(async () => {
+    try {
+      const data = await api.getCommunityUnread();
+      setCommunityUnread(data.unreadTotal || 0);
+    } catch {
+      setCommunityUnread(0);
+    }
+  }, []);
+
+  const refreshStatusCount = useCallback(async () => {
+    try {
+      const data = await api.getEmployerStatusCount();
+      setStatusPending(data.pending || 0);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     refreshUnread();
-    const id = setInterval(refreshUnread, 45000);
-    const onFocus = () => refreshUnread();
+    refreshStatusCount();
+    refreshCommunityUnread();
+    const id = setInterval(() => {
+      refreshUnread();
+      refreshStatusCount();
+      refreshCommunityUnread();
+    }, 45000);
+    const onFocus = () => {
+      refreshUnread();
+      refreshStatusCount();
+      refreshCommunityUnread();
+    };
+    const onCommunity = () => refreshCommunityUnread();
     window.addEventListener('focus', onFocus);
+    window.addEventListener('opus:community-unread', onCommunity);
     return () => {
       clearInterval(id);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('opus:community-unread', onCommunity);
     };
-  }, [refreshUnread]);
+  }, [refreshUnread, refreshStatusCount, refreshCommunityUnread]);
 
   return (
     <div className="emp-shell">
@@ -87,6 +122,9 @@ export default function EmployerLayout() {
             const locked = item.locked && !isVerified;
             const showNotifBadge = item.icon === 'bell' && unread > 0;
             const showMsgBadge = item.icon === 'messages' && msgUnread > 0;
+            const showStatusBadge = item.icon === 'status' && statusPending > 0;
+            const showCommunityBadge = item.icon === 'community' && communityUnread > 0;
+            const statusLabel = statusPending > 9 ? '9+' : String(statusPending);
             return (
               <NavLink
                 key={item.to}
@@ -95,11 +133,17 @@ export default function EmployerLayout() {
               >
                 <NavIcon name={item.icon} />
                 <span>{item.label}</span>
+                {showStatusBadge && (
+                  <span className="emp-nav__badge">{statusLabel}</span>
+                )}
                 {showNotifBadge && (
                   <span className="emp-nav__badge">{unread > 9 ? '9+' : unread}</span>
                 )}
                 {showMsgBadge && (
                   <span className="emp-nav__badge">{msgUnread > 9 ? '9+' : msgUnread}</span>
+                )}
+                {showCommunityBadge && (
+                  <span className="emp-nav__badge">{communityUnread > 9 ? '9+' : communityUnread}</span>
                 )}
                 {locked && <NavIcon name="lock" />}
               </NavLink>
@@ -116,7 +160,7 @@ export default function EmployerLayout() {
       </aside>
 
       <main className="emp-main">
-        <Outlet context={{ refreshUnreadNotifications: refreshUnread, setUnreadNotifications: setUnread }} />
+        <Outlet context={{ refreshUnreadNotifications: refreshUnread, setUnreadNotifications: setUnread, refreshStatusCount }} />
       </main>
 
       {isVerified && <MessagesFab messagesPath="/employer/messages" />}
