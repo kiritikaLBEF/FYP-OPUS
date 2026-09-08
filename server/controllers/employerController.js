@@ -20,6 +20,11 @@ import { emitConversationCreated } from '../socket/index.js';
 import { normalizeRolesInput, rolesBudgetOk, serializeSquadBid } from '../utils/multiFreelancer.js';
 import { serializePublicFreelancer } from '../utils/publicFreelancer.js';
 import { loadBadgesForUsers } from '../utils/badges.js';
+import {
+  assertEmployerCanFundJob,
+  getEmployerWalletSummary,
+  getJobCommitmentAmount,
+} from '../utils/employerWallet.js';
 
 const parseJsonField = (val, fallback = []) => {
   if (Array.isArray(val)) return val;
@@ -30,6 +35,46 @@ const parseJsonField = (val, fallback = []) => {
   } catch {
     return fallback;
   }
+};
+
+const buildFreelancerEnrichment = async (freelancerIds) => {
+  const uniqueIds = [...new Set(freelancerIds.map(String).filter(Boolean))];
+  if (!uniqueIds.length) {
+    return { badgeMap: new Map(), tasksMap: {} };
+  }
+  const badgeMap = await loadBadgesForUsers(uniqueIds);
+  const taskAgg = await WorkSession.aggregate([
+    {
+      $match: {
+        freelancerId: { $in: uniqueIds },
+        status: { $in: ['paid', 'certified'] },
+      },
+    },
+    { $group: { _id: '$freelancerId', count: { $sum: 1 } } },
+  ]);
+  const tasksMap = Object.fromEntries(taskAgg.map((row) => [String(row._id), row.count]));
+  return { badgeMap, tasksMap };
+};
+
+const mapApplicantFreelancer = (f, badgeMap, tasksMap) => {
+  if (!f) return null;
+  const id = String(f._id);
+  return {
+    id: f._id,
+    firstName: f.firstName,
+    lastName: f.lastName,
+    email: f.email,
+    freelancerId: f.freelancerId,
+    skills: f.skills || [],
+    profilePicture: f.profilePicture || '',
+    bio: f.bio || f.professionalSummary || '',
+    degree: f.degree || '',
+    degreeName: f.degreeName || '',
+    schoolName: f.schoolName || '',
+    headline: f.professionalSummary || f.degreeName || f.degree || '',
+    tasksCompleted: tasksMap[id] || 0,
+    badges: badgeMap.get(id) || [],
+  };
 };
 
 const getDateRange = (preset, customFrom, customTo) => {
@@ -353,6 +398,27 @@ export const createJob = async (req, res) => {
       bidMode = 'both';
     }
 
+    const isFixedBudget = budgetType !== 'hourly';
+    const newJobAmount = isFixedBudget
+      ? Number(budget) || 0
+      : Number(hourlyRate) || 0;
+
+    if (!isDraft && newJobAmount > 0) {
+      try {
+        await assertEmployerCanFundJob(req.user._id, newJobAmount);
+      } catch (walletErr) {
+        if (walletErr.code === 'INSUFFICIENT_WALLET') {
+          return res.status(400).json({
+            message: walletErr.message,
+            code: 'INSUFFICIENT_WALLET',
+            wallet: walletErr.wallet,
+            requiredTotal: walletErr.requiredTotal,
+          });
+        }
+        throw walletErr;
+      }
+    }
+
     const employerRef = await ensureEmployerId(req.user);
     const job = await JobPosting.create({
       employerId: req.user._id,
@@ -391,6 +457,16 @@ export const createJob = async (req, res) => {
   }
 };
 
+export const getEmployerWalletCommitment = async (req, res) => {
+  try {
+    const summary = await getEmployerWalletSummary(req.user._id);
+    res.json(summary);
+  } catch (err) {
+    console.error('Employer wallet commitment error:', err);
+    res.status(500).json({ message: 'Failed to load wallet summary' });
+  }
+};
+
 export const getJobStatus = async (req, res) => {
   try {
     const jobs = await JobPosting.find({
@@ -405,7 +481,7 @@ export const getJobStatus = async (req, res) => {
     }).lean();
     await Promise.all(acceptedApps.map((a) => ensureWorkSessionForApplication(a)));
 
-    const [pendingCounts, acceptedCounts, sessions] = await Promise.all([
+    const [pendingCounts, acceptedCounts, sessions, pendingApps, squadCounts] = await Promise.all([
       JobApplication.aggregate([
         { $match: { jobPostingId: { $in: jobIds }, status: 'pending' } },
         { $group: { _id: '$jobPostingId', count: { $sum: 1 } } },
@@ -415,32 +491,136 @@ export const getJobStatus = async (req, res) => {
         { $group: { _id: '$jobPostingId', count: { $sum: 1 } } },
       ]),
       WorkSession.find({ employerId: req.user._id, jobPostingId: { $in: jobIds } }).lean(),
+      JobApplication.find({
+        jobPostingId: { $in: jobIds },
+        status: 'pending',
+      }).sort({ appliedAt: -1 }).lean(),
+      SquadBid.aggregate([
+        { $match: { jobPostingId: { $in: jobIds }, status: 'submitted' } },
+        { $group: { _id: '$jobPostingId', count: { $sum: 1 } } },
+      ]),
     ]);
     const countMap = Object.fromEntries(pendingCounts.map((c) => [String(c._id), c.count]));
+    const squadCountMap = Object.fromEntries(squadCounts.map((c) => [String(c._id), c.count]));
     const acceptedMap = Object.fromEntries(acceptedCounts.map((c) => [String(c._id), c.count]));
     const sessionByJob = Object.fromEntries(sessions.map((s) => [String(s.jobPostingId), s]));
 
-    res.json({
-      items: jobs.map((j) => {
+    const assignedFreelancerByJob = {};
+    for (const ws of sessions) {
+      if (!['paid', 'certified'].includes(ws.status)) {
+        assignedFreelancerByJob[String(ws.jobPostingId)] = String(ws.freelancerId);
+      }
+    }
+    for (const app of acceptedApps) {
+      const jid = String(app.jobPostingId);
+      if (!assignedFreelancerByJob[jid]) {
+        assignedFreelancerByJob[jid] = String(app.freelancerId);
+      }
+    }
+
+    const assignedIds = [...new Set(Object.values(assignedFreelancerByJob))];
+    const assignedUsers = assignedIds.length
+      ? await User.find({ _id: { $in: assignedIds } })
+        .select('firstName lastName profilePicture freelancerId professionalSummary degree degreeName')
+        .lean()
+      : [];
+    const assignedUserMap = Object.fromEntries(assignedUsers.map((u) => [String(u._id), u]));
+
+    const actionCountByJob = {};
+    for (const ws of sessions) {
+      if (['final_submitted', 'awaiting_payment'].includes(ws.status)) {
+        const jid = String(ws.jobPostingId);
+        actionCountByJob[jid] = (actionCountByJob[jid] || 0) + 1;
+      }
+    }
+
+    const bidderIds = [...new Set(pendingApps.map((a) => String(a.freelancerId)))];
+    const bidderUsers = bidderIds.length
+      ? await User.find({ _id: { $in: bidderIds } })
+        .select('firstName lastName profilePicture freelancerId')
+        .lean()
+      : [];
+    const bidderMap = Object.fromEntries(bidderUsers.map((u) => [String(u._id), u]));
+
+    const pendingByJob = {};
+    for (const app of pendingApps) {
+      const jid = String(app.jobPostingId);
+      if (!pendingByJob[jid]) pendingByJob[jid] = [];
+      const fid = String(app.freelancerId);
+      if (pendingByJob[jid].some((b) => b.freelancerId === fid)) continue;
+      const user = bidderMap[fid];
+      pendingByJob[jid].push({
+        applicationId: String(app._id),
+        freelancerId: fid,
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        profilePicture: user?.profilePicture || '',
+        amount: app.amount || 0,
+        roleName: app.roleName || '',
+      });
+    }
+
+    const resolvePhase = (j, ws, hasAcceptedApplicant) => {
+      if (j.publishStatus === 'draft') return 'draft';
+      if (ws && ['paid', 'certified'].includes(ws.status)) return 'completed';
+      if (hasAcceptedApplicant || ws || j.status === 'filled') return 'in_progress';
+      return 'pending';
+    };
+
+    let pendingBidTotal = 0;
+    let progressActionTotal = 0;
+
+    const items = jobs.map((j) => {
         const hasAcceptedApplicant = (acceptedMap[String(j._id)] || 0) > 0 || j.status === 'filled';
         const ws = sessionByJob[String(j._id)];
+        const appCount = countMap[String(j._id)] || 0;
+        const squadCount = squadCountMap[String(j._id)] || 0;
+        const bidCount = appCount + squadCount;
+        const phase = resolvePhase(j, ws, hasAcceptedApplicant);
+        const actionRequiredCount = actionCountByJob[String(j._id)] || 0;
+        const assignedId = assignedFreelancerByJob[String(j._id)];
+        const assignedUser = assignedId ? assignedUserMap[assignedId] : null;
+
+        if (phase === 'pending') pendingBidTotal += bidCount;
+        if (phase === 'in_progress' || phase === 'completed') {
+          progressActionTotal += actionRequiredCount;
+        }
+
         return {
         id: j._id,
         title: j.title,
+        description: j.description || '',
+        category: j.category || 'other',
+        location: j.location || 'Remote',
         status: j.status,
         publishStatus: j.publishStatus || 'published',
+        phase,
         budget: j.budget,
         budgetType: j.budgetType || 'fixed',
         hourlyRate: j.hourlyRate || 0,
+        commitmentAmount: getJobCommitmentAmount(j),
         budgetDisplay: j.budgetType === 'hourly'
           ? `रू ${Number(j.hourlyRate || 0).toLocaleString('en-IN')} /hr`
           : `रू ${Number(j.budget || 0).toLocaleString('en-IN')}`,
         postedAt: j.postedAt,
-        applicationCount: countMap[String(j._id)] || 0,
+        applicationCount: appCount,
+        bidCount,
+        actionRequiredCount,
+        pendingBidders: pendingByJob[String(j._id)] || [],
+        assignedFreelancer: assignedUser
+          ? {
+              id: String(assignedUser._id),
+              firstName: assignedUser.firstName || '',
+              lastName: assignedUser.lastName || '',
+              profilePicture: assignedUser.profilePicture || '',
+              freelancerId: assignedUser.freelancerId || '',
+              headline: assignedUser.professionalSummary || assignedUser.degreeName || assignedUser.degree || '',
+            }
+          : null,
         canDelete: !hasAcceptedApplicant,
         workspaceId: ws?._id || null,
         workspaceStatus: ws?.status || null,
-        assignedFreelancerId: ws ? String(ws.freelancerId) : null,
+        assignedFreelancerId: ws ? String(ws.freelancerId) : assignedId || null,
         projectMode: j.projectMode || 'single',
         multiBidMode: j.multiBidMode || null,
         roles: j.roles || [],
@@ -449,15 +629,28 @@ export const getJobStatus = async (req, res) => {
         isMulti: (j.projectMode || 'single') === 'multi',
         stage: j.publishStatus === 'draft'
           ? 'Draft'
-          : j.status === 'open'
-            ? (j.projectMode === 'multi'
-              ? `Accepting bids · ${(j.roles || []).filter((r) => r.status === 'filled').length}/${(j.roles || []).length} roles filled`
-              : 'Accepting applications')
-            : j.status === 'filled'
-              ? 'Position filled'
-              : 'Closed',
+          : phase === 'pending'
+            ? (bidCount > 0
+              ? `${bidCount} bid${bidCount === 1 ? '' : 's'} received`
+              : 'No bids yet')
+            : phase === 'in_progress'
+              ? 'In progress'
+              : phase === 'completed'
+                ? 'Completed'
+                : j.status === 'open'
+                  ? 'Accepting applications'
+                  : j.status === 'filled'
+                    ? 'Position filled'
+                    : 'Closed',
       };
-      }),
+      });
+
+    res.json({
+      items,
+      summary: {
+        pendingBidTotal,
+        progressActionTotal,
+      },
     });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load job status' });
@@ -505,9 +698,10 @@ export const getJobApplications = async (req, res) => {
 
     const freelancerIds = apps.map((a) => a.freelancerId);
     const freelancers = await User.find({ _id: { $in: freelancerIds } })
-      .select('firstName lastName email freelancerId skills profilePicture bio professionalSummary degree schoolName')
+      .select('firstName lastName email freelancerId skills profilePicture bio professionalSummary degree degreeName schoolName')
       .lean();
     const freelancerMap = Object.fromEntries(freelancers.map((f) => [String(f._id), f]));
+    const { badgeMap, tasksMap } = await buildFreelancerEnrichment(freelancerIds);
 
     const squads = await SquadBid.find({
       jobPostingId: job._id,
@@ -522,6 +716,25 @@ export const getJobApplications = async (req, res) => {
       .lean();
     const squadUserMap = Object.fromEntries(squadUsers.map((u) => [String(u._id), u]));
 
+    const mapApplication = (a, roleNameOverride = '') => {
+      const f = freelancerMap[String(a.freelancerId)];
+      const ws = sessionMap[String(a._id)];
+      return {
+        id: a._id,
+        status: a.status,
+        appliedAt: a.appliedAt,
+        amount: a.amount || 0,
+        message: a.message || '',
+        estimatedDelivery: a.estimatedDelivery || '',
+        bidType: a.bidType || 'single',
+        roleKey: a.roleKey || '',
+        roleName: a.roleName || roleNameOverride || '',
+        workspaceId: ws?._id || null,
+        workspaceStatus: ws?.status || null,
+        freelancer: mapApplicantFreelancer(f, badgeMap, tasksMap),
+      };
+    };
+
     const roles = (job.roles || []).map((r) => ({
       roleKey: r.roleKey,
       name: r.name,
@@ -532,43 +745,16 @@ export const getJobApplications = async (req, res) => {
       bidCount: apps.filter((a) => a.bidType === 'role' && a.roleKey === r.roleKey && a.status === 'pending').length,
       applications: apps
         .filter((a) => a.bidType === 'role' && a.roleKey === r.roleKey)
-        .map((a) => {
-          const f = freelancerMap[String(a.freelancerId)];
-          const ws = sessionMap[String(a._id)];
-          return {
-            id: a._id,
-            status: a.status,
-            appliedAt: a.appliedAt,
-            amount: a.amount || 0,
-            message: a.message || '',
-            estimatedDelivery: a.estimatedDelivery || '',
-            bidType: a.bidType || 'role',
-            roleKey: a.roleKey,
-            roleName: a.roleName || r.name,
-            workspaceId: ws?._id || null,
-            workspaceStatus: ws?.status || null,
-            freelancer: f
-              ? {
-                  id: f._id,
-                  firstName: f.firstName,
-                  lastName: f.lastName,
-                  email: f.email,
-                  freelancerId: f.freelancerId,
-                  skills: f.skills || [],
-                  profilePicture: f.profilePicture || '',
-                  bio: f.bio || f.professionalSummary || '',
-                  degree: f.degree || '',
-                  schoolName: f.schoolName || '',
-                }
-              : null,
-          };
-        }),
+        .map((a) => mapApplication(a, r.name)),
     }));
 
     res.json({
       job: {
         id: job._id,
         title: job.title,
+        description: job.description || '',
+        category: job.category || 'other',
+        location: job.location || 'Remote',
         projectMode: job.projectMode || 'single',
         multiBidMode: job.multiBidMode || null,
         roles,
@@ -577,37 +763,7 @@ export const getJobApplications = async (req, res) => {
         budget: job.budget,
         budgetDisplay: toJobPublic(job.toObject ? job.toObject() : job).budgetDisplay,
       },
-      applications: apps.map((a) => {
-        const f = freelancerMap[String(a.freelancerId)];
-        const ws = sessionMap[String(a._id)];
-        return {
-          id: a._id,
-          status: a.status,
-          appliedAt: a.appliedAt,
-          amount: a.amount || 0,
-          message: a.message || '',
-          estimatedDelivery: a.estimatedDelivery || '',
-          bidType: a.bidType || 'single',
-          roleKey: a.roleKey || '',
-          roleName: a.roleName || '',
-          workspaceId: ws?._id || null,
-          workspaceStatus: ws?.status || null,
-          freelancer: f
-            ? {
-                id: f._id,
-                firstName: f.firstName,
-                lastName: f.lastName,
-                email: f.email,
-                freelancerId: f.freelancerId,
-                skills: f.skills || [],
-                profilePicture: f.profilePicture || '',
-                bio: f.bio || f.professionalSummary || '',
-                degree: f.degree || '',
-                schoolName: f.schoolName || '',
-              }
-            : null,
-        };
-      }),
+      applications: apps.map((a) => mapApplication(a)),
       squads: squads.map((s) => serializeSquadBid(s, squadUserMap)),
     });
   } catch (err) {
@@ -633,10 +789,15 @@ export const getApplicantProfile = async (req, res) => {
     }
 
     const badgeMap = await loadBadgesForUsers([user._id]);
+    const tasksCompleted = await WorkSession.countDocuments({
+      freelancerId: user._id,
+      status: { $in: ['paid', 'certified'] },
+    });
     res.json({
       user: serializePublicFreelancer(user, {
         includeEmail: true,
         badges: badgeMap.get(String(user._id)) || [],
+        tasksCompleted,
       }),
     });
   } catch (err) {

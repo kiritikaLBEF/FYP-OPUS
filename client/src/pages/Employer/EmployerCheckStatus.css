@@ -1,134 +1,449 @@
-.emp-status-card {
-  padding: 0;
-  overflow: hidden;
+.ecs-page-header p {
+  max-width: 640px;
 }
 
-.emp-status-list {
+.ecs-toolbar {
   display: flex;
-  flex-direction: column;
-}
-
-.emp-status-row-wrap {
-  border-bottom: 1px solid var(--separator);
-}
-
-.emp-status-row-wrap:last-child {
-  border-bottom: none;
-}
-
-.emp-status-row {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
-.emp-status-row__main h3 {
-  margin: 0 0 0.25rem;
+.ecs-section-tabs {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: var(--bg-tertiary, #f4f4f5);
+}
+
+.ecs-section-tab {
+  position: relative;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.6rem 0.95rem;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ecs-section-tab.is-active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ecs-section-tab__count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #0071e3;
+  font-size: 0.68rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ecs-section-tab__notify {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ecs-toolbar__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.ecs-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  min-width: 220px;
+}
+
+.ecs-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+.ecs-filter-select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.ecs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.ecs-muted {
+  margin: 0;
+  padding: 0.75rem 0;
+  font-size: 0.84rem;
+  color: var(--text-tertiary);
+}
+
+.ecs-job-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.ecs-job-card__header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.15rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.ecs-job-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #0071e3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ecs-job-card__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.ecs-job-card__title-row h3 {
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.emp-status-row__main p {
-  margin: 0;
-  font-size: 0.8rem;
+.ecs-job-card__multi {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.ecs-job-card__category {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: #f3f4f6;
   color: var(--text-secondary);
 }
 
-.emp-status-row__progress {
-  margin-top: 0.35rem !important;
-  color: #059669 !important;
-  font-weight: 500;
+.ecs-job-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
 }
 
-.emp-completed-badge {
-  display: inline-flex;
+.ecs-job-card__desc {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ecs-job-card__assigned-preview {
+  min-width: 220px;
+}
+
+.ecs-job-card__status {
+  display: flex;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #047857;
-  background: #ecfdf5;
+  gap: 0.5rem;
+}
+
+.ecs-status-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
-.emp-status-row__actions {
+.ecs-status-pill--bids {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.ecs-status-pill--empty {
+  background: #f3f4f6;
+  color: var(--text-tertiary);
+}
+
+.ecs-status-pill--progress {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.ecs-status-pill--completed {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.ecs-job-card__chevron {
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+}
+
+.ecs-job-card__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.ecs-job-card__body {
+  border-top: 1px solid var(--separator);
+  padding: 1rem 1.15rem 1.15rem;
+  background: var(--bg-tertiary, #fafafa);
+}
+
+.ecs-bids-head {
+  margin-bottom: 0.55rem;
+}
+
+.ecs-bids-head__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+.ecs-bid-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ecs-bid-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(110px, 0.95fr) auto auto;
+  gap: 0.85rem 1rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+}
+
+.ecs-bid-item__lead {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.ecs-bid-item__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
-.bid-bell--active {
-  border-color: #0071e3;
-  background: var(--accent-blue-soft);
+.ecs-bid-item__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.emp-applicants-panel {
-  padding: 0 1.25rem 1.25rem;
-  background: var(--bg-tertiary);
-  border-top: 1px solid var(--separator);
-}
-
-.emp-applicants-panel__head {
+.ecs-bid-item__meta {
+  min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 0 0.65rem;
+  flex-direction: column;
+  gap: 0.08rem;
 }
 
-.emp-applicants-panel__head h4 {
-  margin: 0;
-  font-size: 0.85rem;
+.ecs-bid-item__meta strong {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ecs-bid-item__meta span {
+  font-size: 0.66rem;
+  color: var(--text-tertiary);
+}
+
+.ecs-bid-item__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.22rem 0.55rem 0.22rem 0.3rem;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+}
+
+.ecs-bid-item__badge .opus-badge--sm {
+  width: 22px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.ecs-bid-item__badge-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 96px;
+}
+
+.ecs-bid-item__badge-more {
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.ecs-bid-item__badge-empty {
+  font-size: 0.66rem;
+  color: var(--text-tertiary);
+}
+
+.ecs-bid-item__quote {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.06rem;
+  white-space: nowrap;
+}
+
+.ecs-bid-item__quote strong {
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.emp-applicants-panel__head span {
-  font-size: 0.75rem;
+.ecs-bid-item__quote time {
+  font-size: 0.64rem;
   color: var(--text-tertiary);
 }
 
-.emp-muted {
-  margin: 0;
-  padding: 0.5rem 0 1rem;
-  font-size: 0.82rem;
-  color: var(--text-tertiary);
+.ecs-bid-actions--row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
 }
 
-.emp-applicants-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+.ecs-bid-actions--row .ecs-bid-actions__btn {
+  padding: 0.34rem 0.58rem;
+  font-size: 0.68rem;
+  gap: 0.22rem;
+  border-radius: 8px;
+  white-space: nowrap;
 }
 
-.emp-applicant {
+.ecs-bid-actions--row .ecs-bid-actions__btn--ghost {
+  padding: 0.34rem 0.42rem;
+}
+
+.ecs-bid-status {
+  font-size: 0.65rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* legacy card styles kept for squad blocks */
+.ecs-bid-card {
+  display: none;
+}
+
+.ecs-bid-card__main {
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.85rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  margin-bottom: 0.85rem;
 }
 
-.emp-applicant__info {
+.ecs-bid-card__identity {
   display: flex;
   gap: 0.75rem;
   min-width: 0;
 }
 
-.emp-applicant__avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+.ecs-bid-card__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   overflow: hidden;
   background: #e0e7ff;
   color: #4338ca;
@@ -136,162 +451,353 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.85rem;
   flex-shrink: 0;
 }
 
-.emp-applicant__avatar img {
+.ecs-bid-card__avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.emp-applicant__info strong {
-  display: block;
-  font-size: 0.9rem;
+.ecs-bid-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ecs-bid-card__name-row strong {
+  font-size: 0.95rem;
   color: var(--text-primary);
 }
 
-.emp-applicant__info p {
+.ecs-bid-card__verified {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0071e3;
+  color: #fff;
+  font-size: 0.62rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ecs-bid-card__headline {
   margin: 0.15rem 0 0;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
-.emp-applicant__skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.4rem;
+.ecs-bid-card__tasks {
+  margin: 0.25rem 0 0;
+  font-size: 0.76rem;
+  color: var(--text-tertiary);
 }
 
-.emp-applicant__skills span {
+.ecs-bid-card__tasks strong {
+  color: var(--text-primary);
+}
+
+.ecs-bid-card__amount {
+  text-align: right;
+  min-width: 120px;
+}
+
+.ecs-bid-card__amount span {
+  display: block;
   font-size: 0.68rem;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.emp-applicant__actions {
+.ecs-bid-card__amount strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1.05rem;
+  color: #047857;
+}
+
+.ecs-bid-card__amount em {
+  display: block;
+  margin-top: 0.2rem;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.ecs-bid-card__badges {
+  margin-bottom: 0.65rem;
+}
+
+.ecs-badge-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
-  justify-content: flex-end;
 }
 
-.emp-btn--danger {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.emp-btn--delete:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: var(--bg-tertiary);
-  color: var(--text-tertiary);
-  border-color: var(--border-strong);
-}
-
-.emp-delete-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
+.ecs-badge-chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-}
-
-.emp-delete-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: var(--overlay);
-  backdrop-filter: blur(4px);
-}
-
-.emp-delete-modal__panel {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--separator);
   background: var(--bg-secondary);
-  border-radius: 14px;
-  padding: 1.35rem;
-  box-shadow: var(--shadow-lg);
+  max-width: 100%;
 }
 
-.emp-delete-modal__panel h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-  color: var(--text-primary);
+.ecs-badge-chip__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
-.emp-delete-modal__panel p {
+.ecs-bid-card__no-badges {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.55;
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.ecs-bid-card__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.ecs-bid-card__skills span {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
   color: var(--text-secondary);
 }
 
-.emp-delete-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
+.ecs-bid-card__role {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
 }
 
-.emp-applicant__status {
+.ecs-bid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.ecs-bid-actions__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.ecs-bid-actions__btn--ghost {
+  background: var(--bg-secondary);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.ecs-bid-actions__btn--ghost:hover {
+  border-color: #0071e3;
+}
+
+.ecs-bid-actions__btn--primary {
+  background: #0071e3;
+  color: #fff;
+}
+
+.ecs-bid-actions__btn--primary:hover {
+  background: #0062c4;
+}
+
+.ecs-bid-actions__btn--reject {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.ecs-bid-actions__btn--reject:hover {
+  background: #fee2e2;
+}
+
+.ecs-bid-actions__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ecs-bid-status {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
-  padding: 0.25rem 0.55rem;
+  padding: 0.35rem 0.65rem;
   border-radius: 999px;
 }
 
-.emp-applicant__status--accepted {
+.ecs-bid-status--accepted {
   background: #dcfce7;
   color: #16a34a;
 }
 
-.emp-applicant__status--rejected {
+.ecs-bid-status--rejected {
   background: #fee2e2;
   color: #dc2626;
 }
 
-.emp-applicant__status--pending {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.emp-multi-badge {
-  display: inline-block;
-  margin-left: 0.45rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  background: #fff1f2;
-  color: var(--accent-blue);
-  vertical-align: middle;
-}
-
-.emp-multi-progress {
+.ecs-assigned {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin: 0 0 0.75rem;
-  padding: 0.7rem 0.85rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.ecs-assigned--preview {
+  padding: 0;
+  border: none;
+  background: transparent;
+  gap: 0.55rem;
+}
+
+.ecs-assigned--preview .ecs-assigned__avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 0.65rem;
+}
+
+.ecs-assigned--preview .ecs-assigned__profile strong {
+  font-size: 0.76rem;
+}
+
+.ecs-assigned--preview .ecs-assigned__profile p {
+  font-size: 0.66rem;
+  margin: 0;
+}
+
+.ecs-assigned__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.ecs-assigned__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ecs-assigned__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ecs-assigned__profile strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.ecs-assigned__profile p {
+  margin: 0.1rem 0 0;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.ecs-check-status-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ecs-check-status-btn:hover {
+  border-color: #0071e3;
+  background: #eff6ff;
+}
+
+.ecs-check-status-btn__badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ecs-multi-progress {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
   background: #fff1f2;
   color: #9f1239;
   font-size: 0.82rem;
   font-weight: 600;
 }
 
+.ecs-role-block {
+  margin-bottom: 0.85rem;
+}
+
+.ecs-role-block__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.82rem;
+}
+
+.ecs-role-block__head strong {
+  color: var(--text-primary);
+}
+
+.ecs-role-block__head span {
+  color: var(--text-secondary);
+}
+
+/* Keep squad + review tabs from prior styles */
 .emp-review-tabs {
   display: inline-flex;
   gap: 0.25rem;
@@ -318,63 +824,6 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.emp-role-block {
-  border: 1px solid var(--border-strong, #e4e4e7);
-  border-radius: 14px;
-  margin-bottom: 0.75rem;
-  overflow: hidden;
-  background: var(--bg-elevated, #fff);
-}
-
-.emp-role-block__head {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--separator, #f4f4f5);
-}
-
-.emp-role-block__head strong {
-  display: block;
-  font-size: 0.9rem;
-}
-
-.emp-role-block__head p {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.emp-role-block__meta {
-  text-align: right;
-}
-
-.emp-role-block__meta em {
-  display: block;
-  font-style: normal;
-  font-weight: 700;
-}
-
-.emp-role-pill {
-  display: inline-block;
-  margin-top: 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: #fffbeb;
-  color: #b45309;
-}
-
-.emp-role-pill.is-filled {
-  background: #ecfdf5;
-  color: #059669;
-}
-
-.emp-role-block .emp-applicants-list {
-  padding: 0.35rem 0.65rem 0.65rem;
-}
-
 .emp-squad-card {
   border: 1px solid var(--border-strong, #e4e4e7);
   border-radius: 14px;
@@ -389,37 +838,10 @@
   gap: 0.75rem;
 }
 
-.emp-squad-card__top strong {
-  font-size: 0.95rem;
-}
-
-.emp-squad-card__top p {
-  margin: 0.2rem 0 0;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.emp-squad-card__price {
-  text-align: right;
-}
-
 .emp-squad-card__price em {
   display: block;
   font-style: normal;
   font-weight: 700;
-}
-
-.emp-squad-card__price span {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  text-transform: capitalize;
-}
-
-.emp-squad-members {
-  margin: 0.65rem 0 0;
-  padding-left: 1.1rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 
 .emp-squad-card__actions {
@@ -428,17 +850,66 @@
   margin-top: 0.75rem;
 }
 
-@media (max-width: 720px) {
-  .emp-status-row {
+.emp-completed-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+}
+
+@media (max-width: 900px) {
+  .ecs-bid-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem 0.75rem;
+  }
+
+  .ecs-bid-item__badge {
+    grid-column: 1;
+  }
+
+  .ecs-bid-item__quote {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .ecs-bid-actions--row {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .ecs-job-card__header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ecs-job-card__assigned-preview,
+  .ecs-job-card__status {
+    grid-column: 1 / -1;
+  }
+
+  .ecs-job-card__status {
+    justify-content: space-between;
+  }
+
+  .ecs-bid-card__main {
+    flex-direction: column;
+  }
+
+  .ecs-bid-card__amount {
+    text-align: left;
+  }
+
+  .ecs-bid-actions {
+    justify-content: flex-start;
+  }
+
+  .ecs-assigned {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .emp-applicant {
-    flex-direction: column;
-  }
-
-  .emp-applicant__actions {
-    justify-content: flex-start;
   }
 }

@@ -60,6 +60,8 @@ export default function EmployerPostJobs() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cropSrc, setCropSrc] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showInsufficientWallet, setShowInsufficientWallet] = useState(false);
+  const [walletHint, setWalletHint] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -200,19 +202,40 @@ export default function EmployerPostJobs() {
         setTimeout(() => navigate('/employer/check-status'), 2200);
       }
     } catch (err) {
+      if (err.data?.code === 'INSUFFICIENT_WALLET') {
+        setConfirmOpen(false);
+        setWalletHint(err.data.wallet || null);
+        setShowInsufficientWallet(true);
+        return;
+      }
       setError(err.message || 'Failed to save job');
     } finally {
       setLoading(false);
     }
   };
 
-  const openPublishConfirm = () => {
+  const openPublishConfirm = async () => {
     setError('');
     if (!title.trim()) {
       setError('Add a job title before publishing.');
       return;
     }
     if (!validateMulti()) return;
+
+    const newAmount = budgetType === 'fixed' ? Number(amount) || 0 : Number(hourly) || 0;
+    if (newAmount > 0) {
+      try {
+        const summary = await api.getEmployerWalletCommitment();
+        if (summary.availableBalance < summary.committedFunds + newAmount) {
+          setWalletHint(summary);
+          setShowInsufficientWallet(true);
+          return;
+        }
+      } catch {
+        // Server will validate again on publish.
+      }
+    }
+
     setConfirmOpen(true);
   };
 
@@ -487,6 +510,29 @@ export default function EmployerPostJobs() {
 
       {cropSrc && (
         <ImageCropModal imageSrc={cropSrc} onCancel={() => setCropSrc('')} onSave={handleCropped} />
+      )}
+
+      {showInsufficientWallet && (
+        <div className="publish-success-overlay" role="presentation">
+          <div className="confirm-publish-dialog insufficient-wallet-dialog" role="dialog" aria-modal="true">
+            <div className="insufficient-wallet-dialog__icon" aria-hidden="true">!</div>
+            <h2>Insufficient wallet</h2>
+            <p>Kindly load balance first. Your wallet must cover all active jobs plus this new posting.</p>
+            {walletHint && (
+              <div className="insufficient-wallet-dialog__stats">
+                <div><span>Available balance</span><strong>रू {Number(walletHint.availableBalance || 0).toLocaleString('en-IN')}</strong></div>
+                <div><span>Already committed</span><strong>रू {Number(walletHint.committedFunds || 0).toLocaleString('en-IN')}</strong></div>
+                <div><span>This job needs</span><strong>रू {Number(budgetType === 'fixed' ? amount : hourly || 0).toLocaleString('en-IN')}</strong></div>
+              </div>
+            )}
+            <div className="confirm-publish-actions">
+              <button type="button" className="emp-post-btn" onClick={() => setShowInsufficientWallet(false)}>Close</button>
+              <button type="button" className="emp-post-btn emp-post-btn--primary" onClick={() => navigate('/wallet')}>
+                Load balance
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showSuccess && (

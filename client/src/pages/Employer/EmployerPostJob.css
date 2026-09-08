@@ -609,6 +609,49 @@
   gap: 8px;
 }
 
+.insufficient-wallet-dialog {
+  text-align: center;
+}
+
+.insufficient-wallet-dialog__icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.insufficient-wallet-dialog__stats {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 4px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-tertiary, #f4f4f5);
+  text-align: left;
+}
+
+.insufficient-wallet-dialog__stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+}
+
+.insufficient-wallet-dialog__stats span {
+  color: var(--text-secondary);
+}
+
+.insufficient-wallet-dialog__stats strong {
+  color: var(--text-primary);
+}
+
 @media (max-width: 960px) {
   .emp-post-layout,
   .emp-post-grid-2,

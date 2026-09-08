@@ -6,7 +6,7 @@ import FreelancerProfileView from './FreelancerProfileView';
 import './FreelancerProfileModal.css';
 import './PortfolioProjectPreview.css';
 
-export default function FreelancerProfileModal({ freelancerId, onClose, source = 'employer' }) {
+export default function FreelancerProfileModal({ freelancerId, onClose, source = 'employer', variant = 'default' }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function FreelancerProfileModal({ freelancerId, onClose, source =
   return (
     <>
       <div className="fl-profile-backdrop" onClick={onClose} role="presentation">
-        <div className="fl-profile-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className={`fl-profile-modal ${variant === 'full' ? 'fl-profile-modal--full' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
           <button type="button" className="fl-profile-modal__close" onClick={onClose} aria-label="Close">
             <IconClose size={18} />
           </button>
