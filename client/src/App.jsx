@@ -71,6 +71,14 @@ export default function App() {
             )}
           />
           <Route
+            path="wallet/callback/:intentId"
+            element={(
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <WalletCallback />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
             path="wallet"
             element={(
               <ProtectedRoute allowedRoles={['freelancer']}>
@@ -127,6 +135,7 @@ export default function App() {
           <Route path="check-status" element={<EmployerCheckStatus />} />
           <Route path="workspace/:sessionId" element={<TaskWorkspace />} />
           <Route path="wallet/callback" element={<WalletCallback />} />
+          <Route path="wallet/callback/:intentId" element={<WalletCallback />} />
           <Route path="wallet" element={<Wallet />} />
           <Route path="messages" element={<EmployerMessages />} />
           <Route path="notifications" element={<EmployerNotifications />} />

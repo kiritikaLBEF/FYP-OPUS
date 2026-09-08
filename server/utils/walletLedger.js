@@ -169,6 +169,7 @@ export async function summarizeWallet(userId) {
       autoWithdraw: !!wallet.settings?.autoWithdraw,
       autoWithdrawProvider: wallet.settings?.autoWithdrawProvider || '',
       emailReceipts: wallet.settings?.emailReceipts !== false,
+      lowBalanceThreshold: Number(wallet.settings?.lowBalanceThreshold ?? 10000),
     },
     earningsByClient: Object.entries(byClient)
       .filter(([, amount]) => amount > 0)

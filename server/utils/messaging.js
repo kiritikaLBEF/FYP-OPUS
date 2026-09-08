@@ -1,6 +1,7 @@
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import { notifyUser } from './notify.js';
 
 const displayName = (user, role) => {
   if (!user) return role === 'employer' ? 'Organization' : 'Freelancer';
@@ -246,6 +247,47 @@ export const ensureConversationForApplication = async (application, workspaceId 
     reunited: false,
     systemMessage: serializeMessage(msg),
   };
+};
+
+/**
+ * In-app notices after a conversation is created or reused.
+ * Fires for both new threads (conversation_started) and repeat hires (collaboration_again).
+ */
+export const notifyConversationConnected = async (application, conversationResult) => {
+  const conversation = conversationResult?.conversation;
+  if (!conversation || !application) return;
+
+  const reunited = !!conversationResult.reunited;
+  const count = conversation.collaborationCount || 1;
+  const orgName = application.organizationName || 'An organization';
+  const jobTitle = application.jobTitle || 'a job';
+
+  await notifyUser({
+    userId: application.freelancerId,
+    type: reunited ? 'collaboration_again' : 'conversation_started',
+    title: reunited ? `Working together again (${count})` : 'Messaging connected',
+    message: reunited
+      ? `${orgName} accepted another bid. You're collaborating for the ${count} time - continue in the same Messages thread.`
+      : `${orgName} is now connected with you in Messages. Start a conversation anytime.`,
+    link: '/messages',
+    meta: {
+      conversationId: conversation._id,
+      applicationId: application._id,
+    },
+  });
+  await notifyUser({
+    userId: application.employerId,
+    type: reunited ? 'collaboration_again' : 'conversation_started',
+    title: reunited ? `Working together again (${count})` : 'Messaging connected',
+    message: reunited
+      ? `You accepted this freelancer again for "${jobTitle}". Continue in your existing Messages thread.`
+      : `You are now connected with the freelancer for "${jobTitle}" in Messages.`,
+    link: '/employer/messages',
+    meta: {
+      conversationId: conversation._id,
+      applicationId: application._id,
+    },
+  });
 };
 
 export const serializeConversation = async (conversation, viewer) => {

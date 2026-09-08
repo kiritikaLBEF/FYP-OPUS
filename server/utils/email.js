@@ -118,6 +118,26 @@ export const sendEmail = async (to, subject, body, options = {}) => {
   }
 };
 
+const allowDevEmailFallback = () => {
+  const flag = String(process.env.EMAIL_DEV_FALLBACK || '').trim().toLowerCase();
+  if (flag === '1' || flag === 'true' || flag === 'yes') return true;
+  // Local FYP default: do not block signup when Gmail OAuth token is expired.
+  return process.env.NODE_ENV !== 'production';
+};
+
+const sendOtpWithFallback = async ({ to, otp, firstName, kind, subject, html, text }) => {
+  try {
+    await sendEmail(to, subject, text, {
+      fromName: kind === 'reset' ? 'OPUS Security' : 'OPUS Verification',
+      html,
+    });
+  } catch (err) {
+    if (!allowDevEmailFallback()) throw err;
+    console.warn(`[DEV EMAIL FALLBACK] ${kind} OTP for ${to}: ${otp}`);
+    console.warn(`[DEV EMAIL FALLBACK] Email send failed (${err.message}). Use the OTP above.`);
+  }
+};
+
 export const sendOtpEmail = async (to, otp, firstName) => {
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
@@ -129,8 +149,13 @@ export const sendOtpEmail = async (to, otp, firstName) => {
       <p style="color:#9CA3AF;font-size:13px;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
     </div>
   `;
-  await sendEmail(to, 'Your OPUS verification code', `Hi ${firstName}, your verification code is ${otp}. It expires in 10 minutes.`, {
-    fromName: 'OPUS Verification',
+  await sendOtpWithFallback({
+    to,
+    otp,
+    firstName,
+    kind: 'signup',
+    subject: 'Your OPUS verification code',
+    text: `Hi ${firstName}, your verification code is ${otp}. It expires in 10 minutes.`,
     html,
   });
 };
@@ -147,12 +172,15 @@ export const sendPasswordResetOtpEmail = async (to, otp, firstName) => {
       <p style="color:#9CA3AF;font-size:13px;">This code expires in 10 minutes. If you didn't request a password reset, ignore this email.</p>
     </div>
   `;
-  await sendEmail(
+  await sendOtpWithFallback({
     to,
-    'Your OPUS password reset code',
-    `Hi ${name}, your password reset code is ${otp}. It expires in 10 minutes.`,
-    { fromName: 'OPUS Security', html },
-  );
+    otp,
+    firstName: name,
+    kind: 'reset',
+    subject: 'Your OPUS password reset code',
+    text: `Hi ${name}, your password reset code is ${otp}. It expires in 10 minutes.`,
+    html,
+  });
 };
 
 /** @deprecated Use sendEmail. kept for existing call sites */

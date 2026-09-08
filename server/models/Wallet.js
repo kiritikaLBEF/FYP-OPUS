@@ -30,6 +30,7 @@ const walletSchema = new mongoose.Schema(
       autoWithdraw: { type: Boolean, default: false },
       autoWithdrawProvider: { type: String, enum: ['', 'esewa', 'khalti'], default: '' },
       emailReceipts: { type: Boolean, default: true },
+      lowBalanceThreshold: { type: Number, default: 10000 },
     },
   },
   { timestamps: true },

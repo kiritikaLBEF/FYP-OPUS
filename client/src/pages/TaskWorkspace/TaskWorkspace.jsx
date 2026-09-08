@@ -795,10 +795,29 @@ function PaymentCard({ role, status, paymentRef, amount, amountValue, paymentBre
         successRedirect: `/employer/workspace/${sessionId}`,
       });
       if (data.paymentUrl) {
+        try {
+          sessionStorage.setItem(
+            'opus_pending_payment',
+            JSON.stringify({
+              intentId: data.intentId,
+              provider,
+              amount: data.amount,
+              at: Date.now(),
+            }),
+          );
+        } catch {
+          /* ignore */
+        }
         window.location.href = data.paymentUrl;
         return;
       }
-      if (data.form?.action) postGatewayForm(data.form.action, data.form.fields);
+      if (data.form?.action) {
+        postGatewayForm(data.form.action, data.form.fields, {
+          intentId: data.intentId,
+          provider,
+          amount: data.amount,
+        });
+      }
     } catch (err) {
       setLocalError(err.message || 'Could not start payment');
       setBusy('');

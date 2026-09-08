@@ -5,6 +5,7 @@ import UserBadge from '../models/UserBadge.js';
 import User from '../models/User.js';
 import WorkSession from '../models/WorkSession.js';
 import JobApplication from '../models/JobApplication.js';
+import mongoose from 'mongoose';
 import { calculateProfileCompletion } from '../utils/profileCompletion.js';
 import { CANDIDATE_CATEGORIES, ensureDefaultBadges } from '../utils/homepageBadges.js';
 import { loadBadgesForUsers } from '../utils/badges.js';
@@ -105,8 +106,27 @@ export const getPublicHomepage = async (_req, res) => {
         ...freelancerBase(row.userId),
       }));
 
-    const badgeMap = await loadBadgesForUsers(featuredUsers.map((u) => u.id));
-    const featured = featuredUsers.map((u) => ({ ...u, badges: badgeMap.get(u.id) || [] }));
+    const featuredIds = featuredUsers.map((u) => u.id);
+    const objectIds = featuredIds
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    const [badgeMap, completedRows] = await Promise.all([
+      loadBadgesForUsers(featuredIds),
+      objectIds.length
+        ? WorkSession.aggregate([
+            { $match: { freelancerId: { $in: objectIds }, status: { $in: PAID_STATUSES } } },
+            { $group: { _id: '$freelancerId', completed: { $sum: 1 } } },
+          ])
+        : Promise.resolve([]),
+    ]);
+
+    const completedMap = new Map(completedRows.map((r) => [String(r._id), r.completed || 0]));
+    const featured = featuredUsers.map((u) => ({
+      ...u,
+      badges: badgeMap.get(u.id) || [],
+      tasksCompleted: completedMap.get(u.id) || 0,
+    }));
 
     res.json({
       ads: liveAds,

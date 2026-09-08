@@ -6,6 +6,7 @@ import { useReveal } from '../../hooks/useReveal';
 import { api, getProfileUrl } from '../../services/api';
 import AdSlide from '../../components/AdSlide/AdSlide';
 import OpusBadge from '../../components/badges/OpusBadge';
+import { IconBriefcase, IconMessage } from '../../components/icons/Icons';
 import '../../components/AdSlide/AdSlide.css';
 import '../../components/badges/OpusBadge.css';
 import './Home.css';
@@ -34,8 +35,8 @@ function Reveal({ children, className = '', delay = 0 }) {
 }
 
 export default function Home() {
-  const { openSignUp } = useAuthModal();
-  const { user, isFreelancer } = useAuth();
+  const { openSignUp, openSignIn } = useAuthModal();
+  const { user, isFreelancer, isEmployer } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [ads, setAds] = useState([]);
@@ -93,6 +94,24 @@ export default function Home() {
       return;
     }
     navigate(`/talent/${person.id}`);
+  };
+
+  const messagePerformer = (person, e) => {
+    e.stopPropagation();
+    const selfId = String(user?.id || user?._id || '');
+    if (!user) {
+      openSignIn();
+      return;
+    }
+    if (selfId && selfId === String(person.id)) {
+      navigate('/messages');
+      return;
+    }
+    if (isEmployer) {
+      navigate('/employer/messages');
+      return;
+    }
+    navigate('/messages');
   };
 
   return (
@@ -200,44 +219,111 @@ export default function Home() {
 
       <section id="performers" className="home-section home-performers">
         <Reveal>
-          <div className="home-section__head">
-            <h2 className="home-section__title">Top performers</h2>
-            <p className="home-section__desc">
-              Freelancers featured by OPUS admin. This stays blank until someone is selected.
-            </p>
+          <div className="home-section__head home-section__head--row">
+            <div>
+              <h2 className="home-section__title">Top Performers</h2>
+              <p className="home-section__desc">
+                Freelancers featured by OPUS admin. This stays blank until someone is selected.
+              </p>
+            </div>
+            {featured.length > 0 && (
+              <a href="#performers" className="home-performers__view-all">
+                View All Performers →
+              </a>
+            )}
           </div>
         </Reveal>
         {featured.length === 0 ? (
           <div className="home-empty">No featured talent yet.</div>
         ) : (
           <ul className="home-performer-grid">
-            {featured.map((person) => (
-              <li key={person.id}>
-                <article className="home-performer-card">
-                  <img className="home-performer-card__avatar" src={performerAvatar(person)} alt="" />
-                  {person.badges?.length > 0 && (
-                    <div className="home-performer-card__badges opus-badge-row opus-badge-row--center">
-                      {person.badges.slice(0, 3).map((b) => (
-                        <OpusBadge key={b.id} badge={b} size="sm" />
-                      ))}
+            {featured.map((person) => {
+              const avatar = performerAvatar(person);
+              const primaryBadge = person.badges?.[0];
+              const tasks = Number(person.tasksCompleted) || 0;
+              return (
+                <li key={person.id}>
+                  <article className="home-performer-card">
+                    <div className="home-performer-card__media">
+                      <img
+                        className="home-performer-card__cover"
+                        src={avatar}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      {primaryBadge && (
+                        <span
+                          className="home-performer-card__pill"
+                          style={{ background: primaryBadge.color || '#0071e3' }}
+                        >
+                          {primaryBadge.label || 'Top Performer'}
+                        </span>
+                      )}
+                      <img
+                        className="home-performer-card__avatar"
+                        src={avatar}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </div>
-                  )}
-                  <strong className="home-performer-card__name">{person.firstName} {person.lastName}</strong>
-                  {person.schoolName && <span className="home-performer-card__school">{person.schoolName}</span>}
-                  {person.headline && <span className="home-performer-card__role">{person.headline}</span>}
-                  {person.skills?.length > 0 && (
-                    <span className="home-performer-card__skills">{person.skills.slice(0, 4).join(' · ')}</span>
-                  )}
-                  <button
-                    type="button"
-                    className="home-performer-card__view"
-                    onClick={() => openPerformer(person)}
-                  >
-                    View profile
-                  </button>
-                </article>
-              </li>
-            ))}
+
+                    <div className="home-performer-card__body">
+                      {person.badges?.length > 0 && (
+                        <div className="home-performer-card__badges opus-badge-row">
+                          {person.badges.slice(0, 3).map((b) => (
+                            <OpusBadge key={b.id} badge={b} size="sm" />
+                          ))}
+                        </div>
+                      )}
+
+                      <strong className="home-performer-card__name">
+                        {person.firstName} {person.lastName}
+                      </strong>
+                      {person.headline && (
+                        <span className="home-performer-card__role">{person.headline}</span>
+                      )}
+                      {person.schoolName && (
+                        <span className="home-performer-card__school">{person.schoolName}</span>
+                      )}
+
+                      <span className="home-performer-card__tasks">
+                        <IconBriefcase size={15} />
+                        Completed {tasks} task{tasks === 1 ? '' : 's'}
+                      </span>
+
+                      {person.skills?.length > 0 && (
+                        <ul className="home-performer-card__skills">
+                          {person.skills.slice(0, 4).map((skill) => (
+                            <li key={skill}>{skill}</li>
+                          ))}
+                        </ul>
+                      )}
+
+                      <div className="home-performer-card__actions">
+                        <button
+                          type="button"
+                          className="home-performer-card__view"
+                          onClick={() => openPerformer(person)}
+                        >
+                          View Profile
+                        </button>
+                        <button
+                          type="button"
+                          className="home-performer-card__message"
+                          onClick={(e) => messagePerformer(person, e)}
+                          aria-label={`Message ${person.firstName || 'performer'}`}
+                          title="Message"
+                        >
+                          <IconMessage size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

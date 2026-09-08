@@ -70,6 +70,24 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Production: serve the Vite build from the same host as the API (ALB -> port 5001)
+if (process.env.SERVE_CLIENT === 'true') {
+  const clientDist = path.join(__dirname, '../client/dist');
+  app.use(express.static(clientDist));
+  app.get('/{*path}', (req, res, next) => {
+    if (
+      req.path.startsWith('/api')
+      || req.path.startsWith('/uploads')
+      || req.path.startsWith('/socket.io')
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(clientDist, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
+}
+
 const start = async () => {
   await connectDB();
   try {

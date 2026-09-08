@@ -14,6 +14,7 @@ import {
   ensureConversationForApplication,
   serializeConversation,
   listConversationsForUser,
+  notifyConversationConnected,
 } from '../utils/messaging.js';
 import { emitConversationCreated } from '../socket/index.js';
 import { normalizeRolesInput, rolesBudgetOk, serializeSquadBid } from '../utils/multiFreelancer.js';
@@ -722,36 +723,7 @@ const reviewApplication = async (req, res, nextStatus) => {
         },
       });
 
-      if (conversation) {
-        const reunited = !!conversationResult.reunited;
-        const count = conversation.collaborationCount || 1;
-        await notifyUser({
-          userId: application.freelancerId,
-          type: reunited ? 'collaboration_again' : 'conversation_started',
-          title: reunited ? `Working together again (${count})` : 'Messaging connected',
-          message: reunited
-            ? `${orgName} accepted another bid. You're collaborating for the ${count} time - continue in the same Messages thread.`
-            : `${orgName} is now connected with you in Messages. Start a conversation anytime.`,
-          link: '/messages',
-          meta: {
-            conversationId: conversation._id,
-            applicationId: application._id,
-          },
-        });
-        await notifyUser({
-          userId: application.employerId,
-          type: reunited ? 'collaboration_again' : 'conversation_started',
-          title: reunited ? `Working together again (${count})` : 'Messaging connected',
-          message: reunited
-            ? `You accepted this freelancer again for "${jobTitle}". Continue in your existing Messages thread.`
-            : `You are now connected with the freelancer for "${jobTitle}" in Messages.`,
-          link: '/employer/messages',
-          meta: {
-            conversationId: conversation._id,
-            applicationId: application._id,
-          },
-        });
-      }
+      await notifyConversationConnected(application, conversationResult);
     }
 
     res.json({

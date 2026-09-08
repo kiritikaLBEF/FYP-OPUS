@@ -46,7 +46,14 @@ export function buildEsewaPayment({ amount, transactionUuid, successUrl, failure
 export function decodeEsewaCallback(dataParam) {
   if (!dataParam) return null;
   try {
-    const json = Buffer.from(String(dataParam), 'base64').toString('utf8');
+    // Query strings turn base64 "+" into spaces; restore before decoding.
+    let raw = String(dataParam).replace(/ /g, '+');
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {
+      /* already decoded */
+    }
+    const json = Buffer.from(raw, 'base64').toString('utf8');
     return JSON.parse(json);
   } catch {
     return null;

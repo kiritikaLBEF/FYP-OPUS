@@ -178,12 +178,20 @@ export const updateWalletSettings = async (req, res) => {
     if (typeof req.body.emailReceipts === 'boolean') {
       wallet.settings.emailReceipts = req.body.emailReceipts;
     }
+    if (req.body.lowBalanceThreshold != null && req.body.lowBalanceThreshold !== '') {
+      const n = Number(req.body.lowBalanceThreshold);
+      if (!Number.isFinite(n) || n < 0) {
+        return res.status(400).json({ message: 'Enter a valid low-balance amount' });
+      }
+      wallet.settings.lowBalanceThreshold = roundNpr(n);
+    }
     await wallet.save();
     res.json({
       settings: {
         autoWithdraw: !!wallet.settings.autoWithdraw,
         autoWithdrawProvider: wallet.settings.autoWithdrawProvider || '',
         emailReceipts: wallet.settings.emailReceipts !== false,
+        lowBalanceThreshold: Number(wallet.settings.lowBalanceThreshold ?? 10000),
       },
     });
   } catch (err) {
@@ -277,10 +285,12 @@ export const initiateWalletPayment = async (req, res) => {
       return res.status(503).json({ message: 'eSewa is not configured.' });
     }
 
-    const purchaseOrderId = `OPUS-${crypto.randomBytes(8).toString('hex')}`;
+    // eSewa transaction_uuid: keep alphanumeric, max ~20 chars (hyphens get dropped by some RC flows).
+    const purchaseOrderId = `OPUS${crypto.randomBytes(8).toString('hex')}`;
     const origin = clientOrigin();
-    const returnUrl = `${origin}${callbackPath(req.user.role)}?provider=${provider}&intent=${purchaseOrderId}`;
-    const failureUrl = `${origin}${callbackPath(req.user.role)}?provider=${provider}&intent=${purchaseOrderId}&status=failed`;
+    // Put intent in the path so it survives when eSewa replaces ?query with ?data=...
+    const returnUrl = `${origin}${callbackPath(req.user.role)}/${purchaseOrderId}?provider=${provider}`;
+    const failureUrl = `${origin}${callbackPath(req.user.role)}/${purchaseOrderId}?provider=${provider}&status=failed`;
 
     const intent = await PaymentIntent.create({
       userId: req.user._id,
@@ -379,16 +389,43 @@ export const verifyWalletPayment = async (req, res) => {
     const intentKey = String(req.body.intentId || req.body.purchase_order_id || '').trim();
     if (!provider) return res.status(400).json({ message: 'Missing payment provider' });
 
+    const esewaPayload = provider === 'esewa' ? (decodeEsewaCallback(req.body.data) || {}) : {};
+    const esewaUuid = String(esewaPayload.transaction_uuid || '').trim();
+
+    const findOwnedIntent = async (filter) => (
+      PaymentIntent.findOne({ ...filter, userId: req.user._id })
+    );
+
     let intent = null;
     if (intentKey) {
-      intent = await PaymentIntent.findOne({ purchaseOrderId: intentKey, userId: req.user._id });
+      intent = await findOwnedIntent({
+        $or: [{ purchaseOrderId: intentKey }, { transactionUuid: intentKey }],
+      });
     }
     if (!intent && req.body.pidx) {
-      intent = await PaymentIntent.findOne({ pidx: req.body.pidx, userId: req.user._id });
+      intent = await findOwnedIntent({ pidx: req.body.pidx });
+    }
+    // eSewa success redirects often replace query params with ?data=..., so recover from payload.
+    if (!intent && esewaUuid) {
+      intent = await findOwnedIntent({
+        provider: 'esewa',
+        $or: [{ purchaseOrderId: esewaUuid }, { transactionUuid: esewaUuid }],
+      });
+    }
+    // Last resort (sandbox / lost ids): newest pending eSewa intent for this user.
+    if (!intent && provider === 'esewa' && isPaymentSandbox() && (esewaUuid || req.body.data)) {
+      intent = await PaymentIntent.findOne({
+        userId: req.user._id,
+        provider: 'esewa',
+        status: { $in: ['pending', 'failed', 'processing'] },
+      }).sort({ createdAt: -1 });
     }
 
     if (!intent) {
-      return res.status(404).json({ message: 'Payment session not found' });
+      return res.status(404).json({
+        message: 'Payment session not found',
+        hint: intentKey || esewaUuid || null,
+      });
     }
     if (intent.provider !== provider) {
       return res.status(400).json({ message: 'Provider does not match this payment' });
@@ -443,23 +480,49 @@ export const verifyWalletPayment = async (req, res) => {
       locked.gatewayRef = lookup.transaction_id || pidx;
     } else {
       const payload = decodeEsewaCallback(req.body.data) || {};
-      const uuid = payload.transaction_uuid || locked.transactionUuid;
+      const uuid = payload.transaction_uuid || locked.transactionUuid || locked.purchaseOrderId;
       if (payload.signature && !verifyEsewaSignature(payload)) {
         locked.status = 'failed';
         await locked.save();
         return res.status(400).json({ message: 'eSewa signature could not be verified' });
       }
-      const lookup = await lookupEsewaPayment({
-        transactionUuid: uuid,
-        totalAmount: locked.amount,
-      });
-      const status = String(lookup.status || payload.status || '').toUpperCase();
+
+      let status = String(payload.status || '').toUpperCase();
+      let gatewayRef = payload.transaction_code || payload.ref_id || uuid;
+
+      // Prefer live status check; in sandbox fall back to signed callback if lookup fails.
+      try {
+        const lookup = await lookupEsewaPayment({
+          transactionUuid: uuid,
+          totalAmount: locked.amount,
+        });
+        const lookupStatus = String(lookup.status || '').toUpperCase();
+        if (lookupStatus) status = lookupStatus;
+        gatewayRef = lookup.ref_id || gatewayRef;
+        // Sandbox status API can lag; trust COMPLETE callback when signature already passed.
+        if (
+          isPaymentSandbox()
+          && status !== 'COMPLETE'
+          && String(payload.status || '').toUpperCase() === 'COMPLETE'
+        ) {
+          status = 'COMPLETE';
+        }
+      } catch (lookupErr) {
+        if (!isPaymentSandbox() || status !== 'COMPLETE') {
+          locked.status = 'pending';
+          await locked.save();
+          return res.status(502).json({
+            message: lookupErr.message || 'Could not verify eSewa payment',
+          });
+        }
+      }
+
       if (status !== 'COMPLETE') {
         locked.status = 'failed';
         await locked.save();
-        return res.status(400).json({ message: `eSewa payment is ${lookup.status || 'not complete'}` });
+        return res.status(400).json({ message: `eSewa payment is ${status || 'not complete'}` });
       }
-      locked.gatewayRef = lookup.ref_id || payload.transaction_code || uuid;
+      locked.gatewayRef = gatewayRef;
     }
 
     await locked.save();

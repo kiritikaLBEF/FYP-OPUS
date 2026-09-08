@@ -14,6 +14,7 @@ import { ensureWorkSessionForApplication } from './workspaceController.js';
 import {
   ensureConversationForApplication,
   serializeConversation,
+  notifyConversationConnected,
 } from '../utils/messaging.js';
 import { emitConversationCreated } from '../socket/index.js';
 
@@ -31,7 +32,7 @@ const displayName = (user) =>
 async function connectMessaging(application, workspaceId) {
   const conversationResult = await ensureConversationForApplication(application, workspaceId);
   const conversation = conversationResult?.conversation || null;
-  if (!conversation) return null;
+  if (!conversation) return conversationResult || { conversation: null };
 
   await emitConversationCreated(conversation, serializeConversation);
   if (conversationResult.systemMessage) {
@@ -49,7 +50,7 @@ async function connectMessaging(application, workspaceId) {
       io.to(`user:${conversation.freelancerId}`).emit('conversation:updated', updatePayload);
     }
   }
-  return conversation;
+  return conversationResult;
 }
 
 export const searchFreelancers = async (req, res) => {
@@ -401,7 +402,7 @@ export const acceptSquadBid = async (req, res) => {
 
       const session = await ensureWorkSessionForApplication(application, job);
       workspaces.push({ freelancerId: member.freelancerId, workspaceId: session?._id });
-      await connectMessaging(application, session?._id);
+      const conversationResult = await connectMessaging(application, session?._id);
 
       await notifyUser({
         userId: member.freelancerId,
@@ -411,6 +412,7 @@ export const acceptSquadBid = async (req, res) => {
         link: session?._id ? `/dashboard/workspace/${session._id}` : '/dashboard',
         meta: { squadId: squad._id, jobId: job._id, applicationId: application._id },
       });
+      await notifyConversationConnected(application, conversationResult);
     }
 
     job.status = 'filled';
@@ -514,7 +516,7 @@ export const acceptRoleApplication = async (req, res) => {
     );
 
     const session = await ensureWorkSessionForApplication(application, job);
-    await connectMessaging(application, session?._id);
+    const conversationResult = await connectMessaging(application, session?._id);
 
     const filled = allRolesFilled(job);
     if (filled) {
@@ -530,6 +532,9 @@ export const acceptRoleApplication = async (req, res) => {
     }
     await job.save();
 
+    application.jobTitle = application.jobTitle || job.title;
+    application.organizationName = application.organizationName || job.organizationName;
+
     await notifyUser({
       userId: application.freelancerId,
       type: 'bid_accepted',
@@ -543,6 +548,7 @@ export const acceptRoleApplication = async (req, res) => {
         roleKey: application.roleKey,
       },
     });
+    await notifyConversationConnected(application, conversationResult);
 
     res.json({
       message: filled ? 'Role filled - all roles complete, job filled' : 'Role filled',

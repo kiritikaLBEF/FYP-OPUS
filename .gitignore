@@ -12,6 +12,9 @@ coverage/
 env-test/
 mern-test/
 
+# WordPress local credentials (never commit)
+wordpress-site/.env
+
 # Uploaded user files
 server/uploads/ads/*
 server/uploads/chat/*
@@ -24,3 +27,13 @@ server/uploads/workspace/*
 !server/uploads/**/.gitkeep
 server/uploads/community/*
 !server/uploads/**/.gitkeep
+
+# Diagram tooling (keep plantuml.jar + scripts; ignore runtimes/deps)
+docs/diagrams/tools/jdk-*/
+docs/diagrams/tools/jre17.tar.gz
+docs/diagrams/tools/node_modules/
+docs/diagrams/tools/package-lock.json
+
+# AWS local keys and live resource ids
+infra/aws/*.pem
+infra/aws/resources.env
