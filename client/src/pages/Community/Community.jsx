@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { getCommunityBasePath, getCommunityGroupPath, getCommunityInviteUrl } from '../../utils/rolePaths';
 import { io } from 'socket.io-client';
 import {
   Hash, Lock, Globe, Plus, Search, Users, Shield, ShieldCheck, Crown,
@@ -19,19 +20,19 @@ const canManageRoles = (role) => ROLE_RANK[role] >= ROLE_RANK.admin;
 
 const ROLE_META = {
   owner: { label: 'Owner', color: '#E8A33D', Icon: Crown },
-  admin: { label: 'Admin', color: '#5B8DEF', Icon: ShieldCheck },
+  admin: { label: 'Admin', color: '#326d5c', Icon: ShieldCheck },
   moderator: { label: 'Mod', color: '#3FBFA0', Icon: Shield },
   member: { label: null, color: '#6B7086', Icon: null },
 };
 
 const TYPE_META = {
-  regular: { label: 'Message', color: '#5B8DEF', Icon: Megaphone },
-  notice: { label: 'Notice', color: '#5B8DEF', Icon: Info },
+  regular: { label: 'Message', color: '#326d5c', Icon: Megaphone },
+  notice: { label: 'Notice', color: '#326d5c', Icon: Info },
   warning: { label: 'Warning', color: '#E8A33D', Icon: AlertTriangle },
   alert: { label: 'Alert', color: '#E5484D', Icon: AlertOctagon },
 };
 
-const GROUP_COLORS = ['#5B8DEF', '#3FBFA0', '#E8A33D', '#6FB1E0', '#E5789D', '#4A7FD4'];
+const GROUP_COLORS = ['#326d5c', '#3FBFA0', '#E8A33D', '#6FB1E0', '#E5789D', '#4A7FD4'];
 
 const REPORT_REASONS = [
   { value: 'spam', label: 'Spam or misleading content' },
@@ -435,7 +436,7 @@ export default function Community() {
   const selectGroup = (id) => {
     setPanelMode('mine');
     setMobilePane('chat');
-    navigate(`/community/${id}`);
+    navigate(getCommunityGroupPath(user, id));
   };
 
   const refreshInvites = async () => {
@@ -456,11 +457,11 @@ export default function Community() {
       const existing = listed.invites || [];
       setInvites(existing);
       if (existing[0]?.code) {
-        setInviteLink(`${window.location.origin}/community?invite=${existing[0].code}`);
+        setInviteLink(getCommunityInviteUrl(user, existing[0].code));
       } else {
         const created = await api.createCommunityInvite(activeId);
         const code = created.invite?.code;
-        if (code) setInviteLink(`${window.location.origin}/community?invite=${code}`);
+        if (code) setInviteLink(getCommunityInviteUrl(user, code));
         await refreshInvites();
       }
     } catch (err) {
@@ -617,7 +618,7 @@ export default function Community() {
       const data = await api.createCommunityInvite(activeId);
       const code = data.invite?.code;
       if (code) {
-        setInviteLink(`${window.location.origin}/community?invite=${code}`);
+        setInviteLink(getCommunityInviteUrl(user, code));
         setShowInvite(true);
         await refreshInvites();
       }
@@ -631,7 +632,7 @@ export default function Community() {
     try {
       await api.leaveCommunityGroup(activeId);
       setShowSettings(false);
-      navigate('/community');
+      navigate(getCommunityBasePath(user));
       await refreshLists();
     } catch (err) {
       setError(err.message || 'Could not leave');
@@ -642,7 +643,7 @@ export default function Community() {
     if (!activeId || !window.confirm('Delete this group permanently?')) return;
     try {
       await api.deleteCommunityGroup(activeId);
-      navigate('/community');
+      navigate(getCommunityBasePath(user));
       await refreshLists();
     } catch (err) {
       setError(err.message || 'Could not delete group');
@@ -730,7 +731,7 @@ export default function Community() {
             onClick={() => {
               setPanelMode('discover');
               setMobilePane('list');
-              navigate('/community');
+              navigate(getCommunityBasePath(user));
             }}
             title="Discover groups"
           >
@@ -873,7 +874,13 @@ export default function Community() {
             <div>
               <div className="cm-meName">{myName}</div>
               <div className="cm-meRole">
-                {myMembership?.role || myRole || (user?.role === 'employer' ? 'Organization' : 'Freelancer')}
+                {myMembership?.role || myRole || (
+                  user?.role === 'employer'
+                    ? 'Organization'
+                    : user?.role === 'admin'
+                      ? 'Admin'
+                      : 'Freelancer'
+                )}
               </div>
             </div>
             <button
@@ -881,7 +888,13 @@ export default function Community() {
               className="cm-iconBtn"
               style={{ marginLeft: 'auto' }}
               title="Leave community view"
-              onClick={() => navigate(user?.role === 'employer' ? '/employer/dashboard' : '/dashboard')}
+              onClick={() => navigate(
+                user?.role === 'employer'
+                  ? '/employer/dashboard'
+                  : user?.role === 'admin'
+                    ? '/admin/overview'
+                    : '/dashboard',
+              )}
             >
               <LogOut size={15} />
             </button>

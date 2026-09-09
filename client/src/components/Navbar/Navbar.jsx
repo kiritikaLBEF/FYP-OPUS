@@ -13,7 +13,7 @@ import './Navbar.css';
 const NAV_LINKS = [
   { label: 'Home', to: '/', hash: '' },
   { label: 'Find work', to: '/find-jobs', hash: '' },
-  { label: 'Community', to: '/community', hash: '', auth: true },
+  { label: 'Community', to: '/community', hash: '', auth: true, freelancerOnly: true },
   { label: 'Browse', to: '/', hash: 'categories' },
   { label: 'How it works', to: '/', hash: 'how-it-works' },
 ];
@@ -98,14 +98,16 @@ function CommunityNavButton() {
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { openSignIn, openSignUp } = useAuthModal();
-  const { isAuthenticated, isFreelancer, isEmployer, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isFreelancer, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const visibleLinks = NAV_LINKS.filter(
-    (link) => !link.auth || (isAuthenticated && (isFreelancer || isEmployer || isAdmin)),
-  );
+  const visibleLinks = NAV_LINKS.filter((link) => {
+    if (link.freelancerOnly) return isAuthenticated && isFreelancer;
+    if (link.auth) return isAuthenticated && isFreelancer;
+    return true;
+  });
 
   const goNav = (event, link) => {
     setMobileOpen(false);
@@ -149,15 +151,11 @@ export default function Navbar() {
         </nav>
 
         <div className="navbar__actions">
-          {!loading && isAuthenticated && (isFreelancer || isEmployer || isAdmin) && (
+          {!loading && isAuthenticated && isFreelancer && (
             <>
-              {(isFreelancer || isEmployer || isAdmin) && <CommunityNavButton />}
-              {isFreelancer && (
-                <>
-                  <MessagesNavButton />
-                  <NotificationBell />
-                </>
-              )}
+              <CommunityNavButton />
+              <MessagesNavButton />
+              <NotificationBell />
             </>
           )}
 

@@ -9,9 +9,10 @@ import SentNote from '../models/SentNote.js';
 import { NUDGE_TEMPLATES, JOB_DELETE_REASONS, FLAG_REASONS, TEMPLATE_CATEGORIES, VERIFICATION_REJECT_REASONS, VERIFICATION_EMAIL } from '../utils/constants.js';
 import { sendEmail } from '../utils/email.js';
 import { applyEmailPlaceholders, buildEmailContext } from '../utils/emailPlaceholders.js';
-import { isSuperAdminUser } from '../utils/adminConfig.js';
+import { isRootSuperAdmin, isSuperAdminUser } from '../utils/adminConfig.js';
 import { normalizeAdminPrivileges, serializeAdminPrivilegesForClient } from '../utils/adminPrivileges.js';
 import { toJobPublic } from '../utils/jobSerializer.js';
+import CommunityGroup from '../models/CommunityGroup.js';
 
 const OVERDUE_INACTIVE_DAYS = Number(process.env.GIG_OVERDUE_DAYS || 7);
 const AUTO_SUSPEND_FLAGS = 3;
@@ -165,6 +166,35 @@ export const getAdminOverview = async (_req, res) => {
   } catch (err) {
     console.error('Admin overview error:', err);
     res.status(500).json({ message: 'Failed to load overview' });
+  }
+};
+
+/** Compact counts for admin sidebar notification badges */
+export const getAdminNavBadges = async (_req, res) => {
+  try {
+    const [pendingVerifications, openFlags, ongoingGigs, communityReports] = await Promise.all([
+      User.countDocuments({
+        role: 'employer',
+        verificationStatus: 'pending',
+        accountStatus: 'active',
+        isEmailVerified: true,
+      }),
+      User.countDocuments({ flagCount: { $gt: 0 }, accountStatus: 'active' }),
+      WorkProject.find({ status: { $in: ['awaiting_start', 'in_progress', 'review', 'on_hold'] } })
+        .select('updatedAt status')
+        .lean(),
+      CommunityGroup.countDocuments({ reportCount: { $gt: 0 } }),
+    ]);
+
+    res.json({
+      verification: pendingVerifications,
+      flags: openFlags,
+      gigs: ongoingGigs.filter(isOverdue).length,
+      community: communityReports,
+    });
+  } catch (err) {
+    console.error('Admin nav badges error:', err);
+    res.status(500).json({ message: 'Failed to load nav badges' });
   }
 };
 
@@ -399,7 +429,7 @@ export const updateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (isSuperAdminUser(user)) return res.status(400).json({ message: 'Super admin profile cannot be edited here' });
+    if (isRootSuperAdmin(user)) return res.status(400).json({ message: 'Super admin profile cannot be edited here' });
 
     const allowed = ['firstName', 'lastName', 'phone', 'organizationName', 'country', 'city', 'address'];
     for (const k of allowed) {
@@ -861,7 +891,7 @@ export const listAdmins = async (_req, res) => {
     res.json({
       admins: admins.map((a) => ({
         ...toUserLite(a),
-        cannotDelete: isSuperAdminUser(a),
+        cannotDelete: isRootSuperAdmin(a),
       })),
     });
   } catch (err) {
@@ -916,8 +946,8 @@ export const updateAdmin = async (req, res) => {
     const { firstName, lastName, email, password, adminTier, adminPrivileges } = req.body;
     const admin = await User.findById(req.params.adminId).select('+password');
     if (!admin || admin.role !== 'admin') return res.status(404).json({ message: 'Admin not found' });
-    if (isSuperAdminUser(admin) && req.user._id.toString() !== admin._id.toString()) {
-      return res.status(400).json({ message: 'Super admin account can only be edited by itself' });
+    if (isRootSuperAdmin(admin) && req.user._id.toString() !== admin._id.toString()) {
+      return res.status(400).json({ message: 'Root super admin account can only be edited by itself' });
     }
 
     if (firstName?.trim()) admin.firstName = firstName.trim();
@@ -926,12 +956,15 @@ export const updateAdmin = async (req, res) => {
       const normalizedEmail = email.trim().toLowerCase();
       const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: admin._id } });
       if (existing) return res.status(400).json({ message: 'Email already in use' });
+      if (isRootSuperAdmin(admin)) {
+        return res.status(400).json({ message: 'Root super admin email cannot be changed' });
+      }
       admin.email = normalizedEmail;
     }
     if (password?.trim()) {
       admin.password = await User.hashPassword(password.trim());
     }
-    if (adminTier && !isSuperAdminUser(admin)) {
+    if (adminTier && !isRootSuperAdmin(admin)) {
       const nextTier = adminTier === 'super_admin' ? 'super_admin' : 'admin';
       admin.adminTier = nextTier;
       if (nextTier === 'super_admin') {
@@ -965,7 +998,10 @@ export const deactivateAdmin = async (req, res) => {
   try {
     const admin = await User.findById(req.params.adminId);
     if (!admin || admin.role !== 'admin') return res.status(404).json({ message: 'Admin not found' });
-    if (isSuperAdminUser(admin)) return res.status(400).json({ message: 'Super admin cannot be deactivated' });
+    if (isRootSuperAdmin(admin)) return res.status(400).json({ message: 'Root super admin cannot be deactivated' });
+    if (isSuperAdminUser(admin) && isSuperAdminUser(req.user) && req.user._id.toString() === admin._id.toString()) {
+      return res.status(400).json({ message: 'You cannot deactivate your own account' });
+    }
 
     admin.accountStatus = 'suspended';
     admin.suspensionSource = 'manual';

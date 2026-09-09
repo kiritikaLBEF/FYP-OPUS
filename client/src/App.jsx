@@ -33,8 +33,11 @@ import AdminPrivilegeRoute from './components/AdminPrivilegeRoute';
 import FindJobs from './pages/FindJobs/FindJobs';
 import PublicJobView from './pages/FindJobs/PublicJobView';
 import TaskWorkspace from './pages/TaskWorkspace/TaskWorkspace';
+import TeamWorkspacePage from './pages/TaskWorkspace/TeamWorkspace';
 import FreelancerMessages from './pages/Messages/FreelancerMessages';
 import TalentProfile from './pages/Talent/TalentProfile';
+import EmployerProfile from './pages/EmployerProfile/EmployerProfile';
+import EmployerEditProfile from './pages/Employer/EmployerEditProfile';
 import Wallet from './pages/Wallet/Wallet';
 import WalletCallback from './pages/Wallet/WalletCallback';
 import Community from './pages/Community/Community';
@@ -48,6 +51,7 @@ export default function App() {
           <Route path="find-jobs" element={<FindJobs />} />
           <Route path="jobs/:jobId" element={<PublicJobView />} />
           <Route path="talent/:userId" element={<TalentProfile />} />
+          <Route path="employers/:userId" element={<EmployerProfile />} />
           <Route
             path="dashboard"
             element={(
@@ -61,6 +65,14 @@ export default function App() {
             element={(
               <ProtectedRoute allowedRoles={['freelancer']}>
                 <TaskWorkspace />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="dashboard/team-workspace/:teamId"
+            element={(
+              <ProtectedRoute allowedRoles={['freelancer']}>
+                <TeamWorkspacePage />
               </ProtectedRoute>
             )}
           />
@@ -99,7 +111,7 @@ export default function App() {
           <Route
             path="community"
             element={(
-              <ProtectedRoute allowedRoles={['freelancer', 'employer', 'admin']}>
+              <ProtectedRoute allowedRoles={['freelancer']}>
                 <Community />
               </ProtectedRoute>
             )}
@@ -107,7 +119,7 @@ export default function App() {
           <Route
             path="community/:groupId"
             element={(
-              <ProtectedRoute allowedRoles={['freelancer', 'employer', 'admin']}>
+              <ProtectedRoute allowedRoles={['freelancer']}>
                 <Community />
               </ProtectedRoute>
             )}
@@ -133,13 +145,17 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="home" element={<EmployerHome />} />
           <Route path="dashboard" element={<EmployerDashboard />} />
+          <Route path="profile/edit" element={<EmployerEditProfile />} />
           <Route path="post-jobs" element={<EmployerPostJobs />} />
           <Route path="check-status" element={<EmployerCheckStatus />} />
           <Route path="workspace/:sessionId" element={<TaskWorkspace />} />
+          <Route path="team-workspace/:teamId" element={<TeamWorkspacePage />} />
           <Route path="wallet/callback" element={<WalletCallback />} />
           <Route path="wallet/callback/:intentId" element={<WalletCallback />} />
           <Route path="wallet" element={<Wallet />} />
           <Route path="messages" element={<EmployerMessages />} />
+          <Route path="community" element={<Community />} />
+          <Route path="community/:groupId" element={<Community />} />
           <Route path="notifications" element={<EmployerNotifications />} />
         </Route>
 

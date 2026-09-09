@@ -26,8 +26,8 @@
   --cm-text-dim: #6e6e73;
   --cm-text-faint: #86868b;
   --cm-text-body: #3a3a3c;
-  --cm-accent: #0071e3;
-  --cm-accent-soft: rgba(0, 113, 227, 0.12);
+  --cm-accent: #326d5c;
+  --cm-accent-soft: rgba(50, 109, 92, 0.12);
   --cm-gold: #b86e00;
   --cm-online: #34c759;
   --cm-danger: #ff3b30;
@@ -35,7 +35,7 @@
   --cm-overlay: rgba(15, 17, 24, 0.45);
   --cm-scroll-thumb: #c5c8d0;
   --cm-scroll-thumb-hover: #aeb2bc;
-  --cm-rail-logo-end: #0058b0;
+  --cm-rail-logo-end: #2a5c4e;
   --cm-alert-bg: rgba(255, 59, 48, 0.1);
   --cm-alert-text: #c93400;
   --cm-img-label: linear-gradient(0deg, rgba(0, 0, 0, 0.5), transparent);
@@ -72,8 +72,8 @@
   --cm-text-dim: #969CB2;
   --cm-text-faint: #5D6278;
   --cm-text-body: #D5D7E0;
-  --cm-accent: #5B8DEF;
-  --cm-accent-soft: rgba(91, 141, 239, 0.14);
+  --cm-accent: #4a8a76;
+  --cm-accent-soft: rgba(50, 109, 92, 0.18);
   --cm-gold: #E8A33D;
   --cm-online: #3FBF7F;
   --cm-danger: #E5484D;
@@ -81,7 +81,7 @@
   --cm-overlay: rgba(6, 7, 11, 0.7);
   --cm-scroll-thumb: #2A2F3E;
   --cm-scroll-thumb-hover: #363C4E;
-  --cm-rail-logo-end: #3F63C4;
+  --cm-rail-logo-end: #2a5c4e;
   --cm-alert-bg: rgba(229, 72, 77, 0.12);
   --cm-alert-text: #f2b4b6;
   --cm-img-label: linear-gradient(0deg, rgba(0, 0, 0, 0.55), transparent);

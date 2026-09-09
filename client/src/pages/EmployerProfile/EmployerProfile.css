@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+.ep-root {
+  --ink: #14171c;
+  --canvas: #f1f2f5;
+  --surface: #ffffff;
+  --border: #e2e4ea;
+  --text: #14171c;
+  --text-muted: #6b7078;
+  --text-faint: #9297a1;
+  --brand: #326d5c;
+  --brand-soft: #e5f1ee;
+  --amber: #a3620a;
+  --amber-soft: #fbf1e0;
+  --positive: #1a7a4c;
+  --positive-soft: #e7f5ee;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ep-root--page {
+  min-height: calc(100vh - var(--nav-height, 52px));
+  padding-bottom: 28px;
+}
+
+.ep-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+
+.ep-main {
+  padding: 22px 26px 34px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.ep-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  cursor: pointer;
+  width: fit-content;
+  border: none;
+  background: none;
+  font-family: inherit;
+  padding: 0;
+}
+
+.ep-back:hover { color: var(--text); }
+
+.ep-status {
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-muted);
+}
+
+.ep-status--error { color: #b91c1c; }
+
+.ep-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  gap: 16px;
+}
+
+.ep-header-left { display: flex; gap: 16px; min-width: 0; }
+
+.ep-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.ep-mark--img { padding: 0; }
+
+.ep-name-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.ep-name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+
+.ep-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--positive);
+  background: var(--positive-soft);
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.ep-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 7px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.ep-meta-item { display: flex; align-items: center; gap: 5px; }
+
+.ep-type-pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-soft);
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-top: 9px;
+  display: inline-flex;
+  width: fit-content;
+}
+
+.ep-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ep-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.ep-btn-primary { background: var(--brand); color: #fff; }
+.ep-btn-primary:hover { background: #2a5c4e; color: #fff; }
+
+.ep-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ep-grid { display: flex; gap: 18px; align-items: stretch; }
+.ep-col-main,
+.ep-col-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ep-col-main { flex: 1.7; }
+.ep-col-side { flex: 1; min-width: 240px; }
+
+.ep-col-main > .ep-panel:last-child,
+.ep-col-side > .ep-panel:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ep-col-main > .ep-panel:last-child .ep-panel-pad,
+.ep-col-side > .ep-panel:last-child .ep-panel-pad {
+  flex: 1;
+}
+
+.ep-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.ep-panel-pad { padding: 18px 22px; }
+.ep-panel-title { font-size: 14.5px; font-weight: 700; margin-bottom: 10px; }
+.ep-bio { font-size: 13.5px; color: var(--text-muted); line-height: 1.65; margin: 0; }
+
+.ep-stats { display: flex; }
+.ep-stat { flex: 1; padding: 15px 18px; border-right: 1px solid var(--border); min-width: 0; }
+.ep-stat:last-child { border-right: none; }
+.ep-stat-value { font-size: 17px; font-weight: 600; word-break: break-word; }
+.ep-stat-label { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+
+.ep-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #eef0f3;
+  gap: 10px;
+}
+.ep-contact-row:last-of-type { border-bottom: none; }
+.ep-contact-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ep-contact-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--canvas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ep-contact-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.ep-contact-value { font-size: 13px; font-weight: 600; margin-top: 1px; word-break: break-word; }
+.ep-contact-value.link { color: var(--brand); text-decoration: none; display: inline-block; }
+.ep-contact-value.link:hover { text-decoration: underline; }
+
+.ep-reveal-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: none;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.ep-contact-note {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.ep-info-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 0;
+  font-size: 13px;
+}
+.ep-info-row svg { flex-shrink: 0; color: var(--text-faint); }
+.ep-rating-row { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; }
+
+@media (max-width: 820px) {
+  .ep-grid { flex-direction: column; }
+  .ep-header { flex-direction: column; }
+  .ep-header-actions { align-items: flex-start; }
+  .ep-main { padding: 16px 14px 28px; }
+}

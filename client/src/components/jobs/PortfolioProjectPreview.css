@@ -56,7 +56,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0071e3, #5ac8fa);
+  background: linear-gradient(135deg, #326d5c, #5ac8fa);
   color: #fff;
   font-size: 2.5rem;
   font-weight: 700;
@@ -79,8 +79,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #0071e3;
-  background: rgba(0, 113, 227, 0.08);
+  color: #326d5c;
+  background: rgba(50, 109, 92, 0.08);
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
 }
@@ -151,14 +151,14 @@
 }
 
 .portfolio-preview__link:hover {
-  border-color: #0071e3;
-  background: rgba(0, 113, 227, 0.04);
+  border-color: #326d5c;
+  background: rgba(50, 109, 92, 0.04);
 }
 
 .portfolio-preview__link-type {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #0071e3;
+  color: #326d5c;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -210,7 +210,7 @@
   display: inline-flex;
   align-items: center;
   font-size: 0.84rem;
-  color: #0071e3;
+  color: #326d5c;
   text-decoration: none;
 }
 

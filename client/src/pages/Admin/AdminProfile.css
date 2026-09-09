@@ -131,7 +131,7 @@
 
 .adm-profile__tab--active {
   color: var(--text-primary);
-  border-bottom-color: #2563eb;
+  border-bottom-color: #326d5c;
 }
 
 .adm-profile-grid {
@@ -182,7 +182,7 @@
 }
 
 .admin-user-link {
-  color: #2563eb;
+  color: #326d5c;
   font-weight: 500;
   text-decoration: none;
 }
@@ -194,12 +194,12 @@
 .admin-btn--ghost {
   border-color: transparent;
   background: transparent;
-  color: var(--adm-accent, #0071e3);
+  color: var(--adm-accent, #326d5c);
 }
 
 .admin-btn--ghost:hover:not(:disabled) {
-  background: rgba(0, 113, 227, 0.1);
-  color: var(--adm-accent, #0071e3);
+  background: rgba(50, 109, 92, 0.1);
+  color: var(--adm-accent, #326d5c);
   border-color: transparent;
 }
 

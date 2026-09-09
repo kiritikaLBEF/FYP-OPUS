@@ -22,36 +22,18 @@
 .tw-titlebar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+  justify-content: center;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--separator);
   background: var(--bg-elevated);
   backdrop-filter: blur(16px);
 }
 
-.tw-dots {
-  display: flex;
-  gap: 6px;
-}
-
-.tw-dots span {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  border: 1px solid var(--border-strong);
-}
-
-.tw-dots span:nth-child(1) { background: #ff5f57; }
-.tw-dots span:nth-child(2) { background: #febc2e; }
-.tw-dots span:nth-child(3) { background: #28c840; }
-
 .tw-titlebar__label {
-  flex: 1;
   text-align: center;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
-  margin-left: -48px;
 }
 
 .tw-header {
@@ -63,17 +45,42 @@
 .tw-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  padding: 0;
-  margin-bottom: 16px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  margin: 0 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.tw-back:hover { color: var(--accent-blue); }
+.tw-back__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tw-back__text {
+  display: inline-block;
+}
+
+.tw-back:hover {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 8%, var(--bg-elevated));
+}
+
+.tw-back:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
 
 .tw-header__row {
   display: flex;
@@ -166,9 +173,9 @@
 }
 
 .tw-step__dot.is-current {
-  background: #ffe4e6;
+  background: #e5f0ec;
   color: var(--accent-blue);
-  box-shadow: 0 0 0 2px #fda4af;
+  box-shadow: 0 0 0 2px #9fc9ba;
 }
 
 .tw-step__label span {
@@ -187,7 +194,7 @@
   background: var(--border-strong);
 }
 
-.tw-step__line.is-done { background: #fb7185; }
+.tw-step__line.is-done { background: #4a8a76; }
 
 .tw-body {
   display: flex;
@@ -237,7 +244,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #ffe4e6;
+  background: #e5f0ec;
   color: var(--accent-blue);
   display: flex;
   align-items: center;
@@ -284,8 +291,8 @@
 
 .tw-btn--primary {
   color: #fff;
-  background: linear-gradient(to bottom, #ef4453, #dc2f3e);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 6px 16px -6px rgba(220, 47, 62, 0.55);
+  background: linear-gradient(to bottom, #3d7f6c, #326d5c);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 6px 16px -6px rgba(50, 109, 92, 0.55);
 }
 
 .tw-btn--primary:hover:not(:disabled) { transform: translateY(-1px); }
@@ -379,7 +386,7 @@
 }
 
 .tw-input:focus {
-  border-color: #fb7185;
+  border-color: #4a8a76;
   box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.15);
 }
 
@@ -428,12 +435,12 @@
 }
 
 .tw-type-chip:hover {
-  border-color: color-mix(in srgb, #fb7185 40%, var(--border-strong));
+  border-color: color-mix(in srgb, #4a8a76 40%, var(--border-strong));
 }
 
 .tw-type-chip.is-active {
-  background: #fff1f2;
-  border-color: #fecdd3;
+  background: #eef6f3;
+  border-color: #c5ddd4;
   color: #be123c;
 }
 
@@ -470,7 +477,7 @@
 }
 
 .tw-attach--rose {
-  border-color: color-mix(in srgb, #fda4af 60%, var(--border-strong));
+  border-color: color-mix(in srgb, #9fc9ba 60%, var(--border-strong));
   color: #be123c;
   background: var(--bg-secondary);
 }
@@ -581,7 +588,7 @@
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 24px;
-  background: color-mix(in srgb, #fda4af 10%, var(--bg-secondary));
+  background: color-mix(in srgb, #9fc9ba 10%, var(--bg-secondary));
   border: 1.5px solid color-mix(in srgb, #f3c9c0 80%, var(--border-strong));
 }
 
@@ -623,7 +630,7 @@
   gap: 12px;
   align-items: flex-start;
   background: var(--bg-secondary);
-  border: 1px solid color-mix(in srgb, #fda4af 35%, var(--border-strong));
+  border: 1px solid color-mix(in srgb, #9fc9ba 35%, var(--border-strong));
   border-radius: 12px;
   padding: 14px 16px;
 }
@@ -632,7 +639,7 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #fff1f2;
+  background: #eef6f3;
   color: var(--accent-blue);
   display: flex;
   align-items: center;
@@ -709,7 +716,7 @@
 
 .tw-setup-toggle__hint {
   font-weight: 400;
-  color: #fb7185;
+  color: #4a8a76;
 }
 
 .tw-setup-panel {
@@ -967,13 +974,48 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.tw-org--link {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.tw-org--link:hover .tw-org__name {
+  color: #326d5c;
+  text-decoration: underline;
+}
+
+.tw-org:disabled {
+  cursor: default;
+}
+
+.tw-org-inline-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: #326d5c;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tw-org-inline-link:hover {
+  text-decoration: underline;
 }
 
 .tw-org__avatar {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #ffe4e6;
+  background: #e5f0ec;
   color: var(--accent-blue);
   display: flex;
   align-items: center;
@@ -1059,7 +1101,7 @@
 .tw-guidelines__fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(to right, #ef4453, #dc2f3e);
+  background: linear-gradient(to right, #3d7f6c, #326d5c);
   transition: width 0.25s ease;
 }
 
@@ -1181,7 +1223,7 @@
 }
 
 .tw-side-tab.is-active {
-  background: #fff1f2;
+  background: #eef6f3;
   color: #be123c;
 }
 
@@ -1422,7 +1464,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #fff1f2;
+  background: #eef6f3;
   color: var(--accent-blue);
   display: flex;
   align-items: center;
@@ -1520,7 +1562,7 @@
 .tw-update--clickable:hover,
 .tw-final__content--clickable:hover,
 .tw-feedback-card--clickable:hover {
-  border-color: #fda4af;
+  border-color: #9fc9ba;
   box-shadow: var(--shadow-sm);
 }
 
@@ -1683,7 +1725,7 @@
   align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, #0284c7 14%, var(--bg-secondary));
+  background: color-mix(in srgb, #326d5c 14%, var(--bg-secondary));
   color: #0369a1;
   font-weight: 650;
   font-size: 11px;
@@ -1768,7 +1810,7 @@
   display: inline-flex;
   padding: 2px 7px;
   border-radius: 999px;
-  background: color-mix(in srgb, #0284c7 14%, var(--bg-secondary));
+  background: color-mix(in srgb, #326d5c 14%, var(--bg-secondary));
   color: #0369a1;
   font-weight: 650;
   font-size: 10px;
@@ -1839,7 +1881,7 @@
   gap: 10px;
   padding: 14px 16px 16px;
   border-top: 1.5px solid var(--border-strong);
-  background: color-mix(in srgb, #0ea5e9 8%, var(--bg-secondary));
+  background: color-mix(in srgb, #4a8a76 8%, var(--bg-secondary));
 }
 
 .tw-draft-review__actions {
@@ -1858,7 +1900,7 @@
 
 .tw-draft-decision--approved,
 .tw-draft-decision--approved_new_draft {
-  background: color-mix(in srgb, #0284c7 10%, var(--bg-secondary));
+  background: color-mix(in srgb, #326d5c 10%, var(--bg-secondary));
 }
 
 .tw-draft-decision--approved_complete {

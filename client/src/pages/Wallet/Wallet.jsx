@@ -502,20 +502,6 @@ export default function Wallet() {
               </button>
             </div>
           </section>
-
-          {isFreelancer && (wallet?.earningsByClient || []).length > 0 && (
-            <section className="wal-panel" style={{ marginTop: 18 }}>
-              <div className="wal-panel__head">
-                <div className="wal-panel__title">Earnings by client</div>
-              </div>
-              {wallet.earningsByClient.map((row) => (
-                <div key={row.name} className="wal-bd">
-                  <span>{row.name}</span>
-                  <strong>{fmtNPR(row.amount, { digits: 0 })}</strong>
-                </div>
-              ))}
-            </section>
-          )}
         </>
       )}
 

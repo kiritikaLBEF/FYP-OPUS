@@ -1,14 +1,3 @@
-/**
- * Local Gmail OAuth setup (avoids OAuth Playground redirect issues).
- *
- * 1. Google Cloud Console → APIs & Services → Credentials → your OAuth Web client
- * 2. Authorized redirect URIs → add exactly:
- *    http://localhost:8765/oauth/callback
- * 3. Enable Gmail API for the project
- * 4. Run: node scripts/gmail-oauth-local.js
- * 5. Sign in as kritika.chauhan200201@gmail.com when browser opens
- * 6. Copy GMAIL_REFRESH_TOKEN into server/.env and restart server
- */
 import '../config/env.js';
 import http from 'http';
 import { OAuth2Client } from 'google-auth-library';

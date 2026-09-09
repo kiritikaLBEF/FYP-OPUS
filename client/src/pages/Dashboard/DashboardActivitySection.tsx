@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { fmtDate, fmtNPR, STATUS_LABELS } from './dashboardUtils';
 import DashboardPagination, { HOME_PAGE_SIZE } from './DashboardPagination';
 import type { ActivityFeedItem } from './DashboardActivityFeed';
-import './dashboard-tokens.css';
-import './dashboard-glass.css';
 import './DashboardActivitySection.css';
 
 type ActivityTab = 'recent' | 'pending' | 'completed' | 'bids';
 
+const RECENT_LIMIT = 10;
+
 const TABS: { id: ActivityTab; label: string }[] = [
-  { id: 'recent', label: 'Recent Activity' },
-  { id: 'pending', label: 'Pending Tasks' },
-  { id: 'completed', label: 'Completed Tasks' },
-  { id: 'bids', label: 'Bids Submitted' },
+  { id: 'recent', label: 'Recent activity' },
+  { id: 'pending', label: 'Pending tasks' },
+  { id: 'completed', label: 'Completed tasks' },
+  { id: 'bids', label: 'Bids submitted' },
 ];
 
 interface TaskItem {
@@ -65,11 +65,11 @@ export default function DashboardActivitySection() {
     setLoading(true);
     try {
       if (activeTab === 'recent') {
-        const data = await api.getActivityFeed({ page: activePage, limit: HOME_PAGE_SIZE });
-        setActivityItems(data.items || []);
-        setTotal(data.total ?? 0);
-        setPages(data.pages ?? 1);
-        setPage(data.page ?? activePage);
+        const data = await api.getActivityFeed({ page: 1, limit: RECENT_LIMIT });
+        setActivityItems((data.items || []).slice(0, RECENT_LIMIT));
+        setTotal(Math.min(data.total ?? 0, RECENT_LIMIT));
+        setPages(1);
+        setPage(1);
       } else if (activeTab === 'bids') {
         const data = await api.getBids({ page: activePage, limit: HOME_PAGE_SIZE });
         setBidItems(data.items || []);
@@ -210,7 +210,7 @@ export default function DashboardActivitySection() {
   };
 
   return (
-    <section className="glass-surface das" aria-label="Activity and tasks" style={{ '--glass-delay': '400ms' } as CSSProperties}>
+    <section className="das" aria-label="Activity and tasks">
       <header className="das__head">
         <h2 className="das__title">Activity</h2>
         <div className="das-tabs" role="tablist" aria-label="Activity filters">
@@ -231,7 +231,7 @@ export default function DashboardActivitySection() {
 
       {renderContent()}
 
-      {!loading && pages > 1 && (
+      {!loading && tab !== 'recent' && pages > 1 && (
         <DashboardPagination page={page} pages={pages} onPageChange={handlePage} label="Activity pages" />
       )}
     </section>

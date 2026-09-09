@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAuthModal } from '../../context/AuthModalContext';
 import { api, getProfileUrl } from '../../services/api';
@@ -41,6 +42,7 @@ export default function JobDetailModal({
 }) {
   const { isAuthenticated, user } = useAuth();
   const { openSignIn } = useAuthModal();
+  const navigate = useNavigate();
   const [applyPhase, setApplyPhase] = useState('idle');
   const [hasApplied, setHasApplied] = useState(!!job?.hasApplied);
   const [applyError, setApplyError] = useState('');
@@ -56,10 +58,19 @@ export default function JobDetailModal({
 
   const org = organizationName || job.organizationName || 'Organization';
   const initials = orgInitials(org);
+  const employerUserId = job.employerId ? String(job.employerId) : '';
   const isMulti = job.isMulti || job.projectMode === 'multi';
   const applied = hasApplied || job.hasApplied || applyPhase === 'success';
   const canApply = showApply && !previewOnly && job.id;
   const showSimpleApply = canApply && !isMulti;
+
+  const openEmployerProfile = () => {
+    if (!employerUserId) return;
+    onClose?.();
+    navigate(`/employers/${employerUserId}`, {
+      state: { from: '/find-jobs', fromLabel: 'Back to job listing' },
+    });
+  };
 
   const handleApply = async () => {
     if (!job.id) return;
@@ -147,7 +158,13 @@ export default function JobDetailModal({
           <div className="job-modal__org">
             <div className="job-modal__org-avatar">{initials}</div>
             <div>
-              <p className="job-modal__org-name">{org}</p>
+              {employerUserId ? (
+                <button type="button" className="job-modal__org-name job-modal__org-name--link" onClick={openEmployerProfile}>
+                  {org}
+                </button>
+              ) : (
+                <p className="job-modal__org-name">{org}</p>
+              )}
               <p className="job-modal__org-meta">Verified organization</p>
             </div>
           </div>

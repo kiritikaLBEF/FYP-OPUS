@@ -32,7 +32,7 @@ function CompactField({ label, hint, children }) {
 
 export const toDateInput = (d) => (d ? new Date(d).toISOString().split('T')[0] : '');
 
-export function PanelHeader({ title, subtitle, icon: Icon }) {
+export function PanelHeader({ title, subtitle, icon: Icon, completion }) {
   return (
     <header className="ep-panel__head">
       <div className="ep-panel__head-inner">
@@ -41,8 +41,22 @@ export function PanelHeader({ title, subtitle, icon: Icon }) {
             <Icon />
           </span>
         )}
-        <div>
-          <h2 className="ep-panel__title">{title}</h2>
+        <div className="ep-panel__head-text">
+          <div className="ep-panel__title-row">
+            <h2 className="ep-panel__title">{title}</h2>
+            {completion != null && (
+              <div className="ep-completion-compact" aria-label={`Profile ${completion}% complete`}>
+                <div className="ep-completion-ring" style={{ '--progress': completion }}>
+                  <svg className="ep-completion-ring__svg" viewBox="0 0 44 44" aria-hidden="true">
+                    <circle className="ep-completion-ring__track" cx="22" cy="22" r="18" />
+                    <circle className="ep-completion-ring__fill" cx="22" cy="22" r="18" />
+                  </svg>
+                  <span className="ep-completion-ring__value">{completion}%</span>
+                </div>
+                <span className="ep-completion-compact__label">Complete</span>
+              </div>
+            )}
+          </div>
           {subtitle && <p className="ep-panel__sub">{subtitle}</p>}
         </div>
       </div>

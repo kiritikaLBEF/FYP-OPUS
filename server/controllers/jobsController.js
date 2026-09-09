@@ -1,9 +1,11 @@
 import JobPosting from '../models/JobPosting.js';
 import JobApplication from '../models/JobApplication.js';
+import SquadBid from '../models/SquadBid.js';
 import { publicJobFilter } from '../utils/publicVisibility.js';
 import { toJobPublic } from '../utils/jobSerializer.js';
 import { buildPublicJobQuery, jobSortFromParam } from '../utils/jobListFilters.js';
 import { notifyUser } from '../utils/notify.js';
+import { freelancerAlreadyBidOnJob } from '../utils/multiFreelancer.js';
 
 const enrichJobForUser = async (job, user) => {
   const base = toJobPublic(job);
@@ -14,19 +16,21 @@ const enrichJobForUser = async (job, user) => {
   const apps = await JobApplication.find({
     jobPostingId: job._id,
     freelancerId: user._id,
+    status: { $ne: 'withdrawn' },
   }).lean();
 
-  const SquadBid = (await import('../models/SquadBid.js')).default;
   const mySquad = await SquadBid.findOne({
     jobPostingId: job._id,
     $or: [{ leaderId: user._id }, { 'members.freelancerId': user._id }],
     status: { $in: ['forming', 'submitted', 'accepted'] },
   }).lean();
 
+  const hasApplied = apps.length > 0 || !!mySquad;
+
   return {
     ...base,
-    hasApplied: apps.length > 0,
-    applicationStatus: apps[0]?.status || null,
+    hasApplied,
+    applicationStatus: apps[0]?.status || mySquad?.status || null,
     myApplications: apps.map((a) => ({
       id: a._id,
       status: a.status,
@@ -36,6 +40,7 @@ const enrichJobForUser = async (job, user) => {
       amount: a.amount || 0,
     })),
     appliedRoleKeys: apps.map((a) => a.roleKey).filter(Boolean),
+    lockedToOneRole: hasApplied,
     mySquadBid: mySquad
       ? {
           id: mySquad._id,
@@ -139,6 +144,15 @@ export const applyToJob = async (req, res) => {
       bidType = 'role';
       roleName = role.name;
       resolvedRoleKey = role.roleKey;
+
+      const prior = await freelancerAlreadyBidOnJob(job._id, req.user._id);
+      if (prior.blocked) {
+        return res.status(400).json({
+          message: prior.application
+            ? 'You already submitted a bid on this project. You can only apply to one role.'
+            : 'You are already part of a squad bid on this project. You cannot apply to another role.',
+        });
+      }
     }
 
     const existing = await JobApplication.findOne({
@@ -155,11 +169,9 @@ export const applyToJob = async (req, res) => {
       });
     }
 
-    const bidAmount = amount != null
-      ? Number(amount)
-      : (resolvedRoleKey
-        ? (job.roles || []).find((r) => r.roleKey === resolvedRoleKey)?.budgetAmount || 0
-        : job.budget || 0);
+    const bidAmount = resolvedRoleKey
+      ? (job.roles || []).find((r) => r.roleKey === resolvedRoleKey)?.budgetAmount || 0
+      : (amount != null ? Number(amount) : job.budget || 0);
 
     const application = await JobApplication.create({
       jobPostingId: job._id,

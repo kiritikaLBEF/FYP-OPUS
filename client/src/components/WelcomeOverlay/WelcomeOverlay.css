@@ -21,8 +21,8 @@
   height: 72px;
   margin: 0 auto 1.25rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #0071e3, #5ac8fa);
-  box-shadow: 0 0 60px rgba(0, 113, 227, 0.55);
+  background: linear-gradient(135deg, #326d5c, #5ac8fa);
+  box-shadow: 0 0 60px rgba(50, 109, 92, 0.55);
   animation: opusWelcomePulse 1.8s ease-in-out infinite;
 }
 

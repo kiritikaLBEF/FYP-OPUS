@@ -4,7 +4,7 @@ import { CandidateTables } from './AdminFeatured';
 import '../../components/Layout/admin-tokens.css';
 import '../../components/Layout/AdminLayout.css';
 
-const emptyBadge = { key: '', label: '', description: '', color: '#0071e3', active: true };
+const emptyBadge = { key: '', label: '', description: '', color: '#326d5c', active: true };
 
 export default function AdminBadges() {
   const [badges, setBadges] = useState([]);

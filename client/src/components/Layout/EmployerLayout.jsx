@@ -9,13 +9,12 @@ import MessagesFab from '../../features/messaging/MessagesFab';
 import './EmployerLayout.css';
 
 const NAV_ITEMS = [
-  { to: '/employer/home', label: 'Home', icon: 'home', locked: false },
   { to: '/employer/dashboard', label: 'Dashboard', icon: 'dashboard', locked: false },
   { to: '/employer/wallet', label: 'Wallet', icon: 'wallet', locked: false },
   { to: '/employer/post-jobs', label: 'Post Jobs', icon: 'post', locked: true },
   { to: '/employer/check-status', label: 'Check Status', icon: 'status', locked: true },
   { to: '/employer/messages', label: 'Messages', icon: 'messages', locked: true },
-  { to: '/community', label: 'Community', icon: 'community', locked: false },
+  { to: '/employer/community', label: 'Community', icon: 'community', locked: false },
   { to: '/employer/notifications', label: 'Notifications', icon: 'bell', locked: false },
 ];
 
@@ -109,6 +108,9 @@ export default function EmployerLayout() {
         <div className="emp-sidebar__org">
           <p className="emp-sidebar__org-name">{user?.organizationName || 'Organization'}</p>
           <p className="emp-sidebar__org-id">{user?.employerId || '-'}</p>
+          <NavLink to="/employer/profile/edit" className="emp-sidebar__edit-profile">
+            Edit profile
+          </NavLink>
           {user?.verificationStatus !== 'verified' && (
             <span className="emp-sidebar__verify emp-sidebar__verify--pending">Pending verification</span>
           )}

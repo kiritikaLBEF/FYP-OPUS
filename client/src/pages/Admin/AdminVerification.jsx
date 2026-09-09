@@ -8,7 +8,7 @@ import '../../components/Layout/admin-tokens.css';
 import '../../components/Layout/AdminLayout.css';
 
 export default function AdminVerification() {
-  const { openVerify } = useAdmin();
+  const { openVerify, refreshBadges } = useAdmin();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,6 +20,7 @@ export default function AdminVerification() {
     try {
       const data = await api.getVerificationQueue();
       setQueue(data.queue || []);
+      refreshBadges();
     } catch (err) {
       setError(err.message || 'Failed to load verification queue');
       setQueue([]);

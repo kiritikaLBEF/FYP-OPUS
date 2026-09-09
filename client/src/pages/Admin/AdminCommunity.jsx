@@ -1,8 +1,23 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import AdminModal from '../../components/admin/AdminModal';
-import { formatDate, formatDateTime } from './adminHelpers';
+import { AdminUserLink } from '../../components/admin/AdminQuickActions';
+import { formatDate, formatDateTime, roleLabel } from './adminHelpers';
 import '../../components/Layout/AdminLayout.css';
+
+function memberDisplayName(member) {
+  const user = member?.user;
+  if (!user) return 'Unknown member';
+  if (user.missing) return 'Account removed';
+  return (
+    user.name
+    || [user.firstName, user.lastName].filter(Boolean).join(' ').trim()
+    || user.organizationName
+    || user.email
+    || 'Unknown member'
+  );
+}
 
 const FILTERS = [
   { key: 'all', label: 'All groups' },
@@ -314,25 +329,47 @@ export default function AdminCommunity() {
                       <th>Role</th>
                       <th>Status</th>
                       <th>Joined</th>
+                      <th>Profile</th>
                     </tr>
                   </thead>
                   <tbody>
                     {membersLoading ? (
-                      <tr><td colSpan={4} className="admin-muted">Loading members…</td></tr>
+                      <tr><td colSpan={5} className="admin-muted">Loading members…</td></tr>
                     ) : members.length === 0 ? (
-                      <tr><td colSpan={4} className="admin-muted">No members found.</td></tr>
+                      <tr><td colSpan={5} className="admin-muted">No members found.</td></tr>
                     ) : (
-                      members.map((member) => (
-                        <tr key={member.id}>
-                          <td>
-                            <strong>{member.user?.name || 'Member'}</strong>
-                            <div className="admin-muted">{member.user?.role}</div>
-                          </td>
-                          <td>{member.role}</td>
-                          <td>{member.status}</td>
-                          <td>{formatDate(member.joinedAt)}</td>
-                        </tr>
-                      ))
+                      members.map((member) => {
+                        const label = memberDisplayName(member);
+                        const canOpenProfile = member.userId && !member.user?.missing;
+                        return (
+                          <tr key={member.id}>
+                            <td>
+                              {canOpenProfile ? (
+                                <AdminUserLink user={{ id: member.userId, ...member.user }}>
+                                  {label}
+                                </AdminUserLink>
+                              ) : (
+                                <strong>{label}</strong>
+                              )}
+                              <div className="admin-muted">
+                                {roleLabel(member.user?.role) || member.user?.role || 'User unavailable'}
+                              </div>
+                            </td>
+                            <td>{member.role}</td>
+                            <td>{member.status}</td>
+                            <td>{formatDate(member.joinedAt)}</td>
+                            <td>
+                              {canOpenProfile ? (
+                                <Link to={`/admin/users/${member.userId}`} className="admin-user-link">
+                                  View profile
+                                </Link>
+                              ) : (
+                                <span className="admin-muted">Unavailable</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

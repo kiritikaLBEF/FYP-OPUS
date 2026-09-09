@@ -98,6 +98,9 @@ const userSchema = new mongoose.Schema(
     flagCount: { type: Number, default: 0 },
 
     organizationName: { type: String, trim: true, default: '' },
+    website: { type: String, trim: true, default: '' },
+    socialHandle: { type: String, trim: true, default: '' },
+    publicEmail: { type: String, trim: true, lowercase: true, default: '' },
     panCardDocument: { type: String, default: '' },
     businessRegistrationDocument: { type: String, default: '' },
     businessType: {
@@ -195,16 +198,29 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
     dateOfBirth: this.dateOfBirth,
     role: this.role,
     adminTier: this.adminTier || '',
-    adminPrivileges: this.role === 'admin' ? {
-      users: !!this.adminPrivileges?.users,
-      verification: !!this.adminPrivileges?.verification,
-      jobs: !!this.adminPrivileges?.jobs,
-      monitor: !!this.adminPrivileges?.monitor,
-      homepageAds: !!this.adminPrivileges?.homepageAds,
-      featured: !!this.adminPrivileges?.featured,
-      badges: !!this.adminPrivileges?.badges,
-      community: !!this.adminPrivileges?.community,
-    } : undefined,
+    adminPrivileges: this.role === 'admin'
+      ? (this.adminTier === 'super_admin'
+        ? {
+          users: true,
+          verification: true,
+          jobs: true,
+          monitor: true,
+          homepageAds: true,
+          featured: true,
+          badges: true,
+          community: true,
+        }
+        : {
+          users: !!this.adminPrivileges?.users,
+          verification: !!this.adminPrivileges?.verification,
+          jobs: !!this.adminPrivileges?.jobs,
+          monitor: !!this.adminPrivileges?.monitor,
+          homepageAds: !!this.adminPrivileges?.homepageAds,
+          featured: !!this.adminPrivileges?.featured,
+          badges: !!this.adminPrivileges?.badges,
+          community: !!this.adminPrivileges?.community,
+        })
+      : undefined,
     freelancerId: this.freelancerId || '',
     employerId: this.employerId || '',
     accountStatus: this.accountStatus || 'active',
@@ -223,6 +239,9 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
       createdAt: f.createdAt,
     })),
     organizationName: this.organizationName || '',
+    website: this.website || '',
+    socialHandle: this.socialHandle || '',
+    publicEmail: this.publicEmail || '',
     businessType: this.businessType || '',
     businessTypeOther: this.businessTypeOther || '',
     panCardDocument: this.panCardDocument || '',
@@ -230,6 +249,7 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
     verificationStatus: this.verificationStatus || 'pending',
     verificationRejectionReason: this.verificationRejectionReason || '',
     verifiedAt: this.verifiedAt || null,
+    createdAt: this.createdAt || null,
     degree: this.degree,
     degreeName: this.degreeName,
     schoolName: this.schoolName,

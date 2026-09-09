@@ -265,7 +265,7 @@
 }
 
 .explore-job-card:hover {
-  border-color: rgba(0, 113, 227, 0.4);
+  border-color: rgba(50, 109, 92, 0.4);
 }
 
 .explore-job-card:focus-visible {
@@ -345,6 +345,16 @@
   gap: 6px;
   min-width: 0;
   height: 20px;
+}
+
+.explore-job-card__org--link {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.explore-job-card__org--link:hover .explore-job-card__org-name {
+  color: var(--accent-blue);
+  text-decoration: underline;
 }
 
 .explore-job-card__avatar {

@@ -252,11 +252,11 @@
 }
 
 .onboard-link-btn:hover:not(:disabled) {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(50, 109, 92, 0.1);
 }
 
 .onboard-link-btn:active:not(:disabled) {
-  background: rgba(0, 122, 255, 0.16);
+  background: rgba(50, 109, 92, 0.16);
 }
 
 .onboard-link-btn:disabled {

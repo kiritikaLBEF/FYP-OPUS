@@ -34,10 +34,10 @@
   --nav-height: 52px;
   --content-max: 980px;
   --content-max-wide: 1120px;
-  --accent-blue: #0071e3;
-  --accent-blue-hover: #0077ed;
-  --accent-blue-soft: rgba(0, 113, 227, 0.16);
-  --accent-blue-glow: rgba(0, 113, 227, 0.28);
+  --accent-blue: #326d5c;
+  --accent-blue-hover: #2a5c4e;
+  --accent-blue-soft: rgba(50, 109, 92, 0.16);
+  --accent-blue-glow: rgba(50, 109, 92, 0.28);
   --accent-green: #34c759;
   --accent-orange: #ff9500;
   --accent-red: #ff3b30;
@@ -74,8 +74,8 @@
   --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.14);
   --overlay: rgba(0, 0, 0, 0.36);
   --input-bg: rgba(255, 255, 255, 0.92);
-  --hero-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 113, 227, 0.1), transparent 70%);
-  --selection-bg: rgba(0, 113, 227, 0.28);
+  --hero-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(50, 109, 92, 0.12), transparent 70%);
+  --selection-bg: rgba(50, 109, 92, 0.28);
 }
 
 [data-theme='dark'] {
@@ -96,9 +96,9 @@
   --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.55);
   --overlay: rgba(0, 0, 0, 0.55);
   --input-bg: rgba(45, 45, 47, 0.9);
-  --hero-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 113, 227, 0.18), transparent 70%);
-  --selection-bg: rgba(0, 113, 227, 0.4);
-  --accent-blue-soft: rgba(0, 113, 227, 0.24);
+  --hero-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(50, 109, 92, 0.2), transparent 70%);
+  --selection-bg: rgba(50, 109, 92, 0.4);
+  --accent-blue-soft: rgba(50, 109, 92, 0.24);
 }
 
 html {
@@ -212,6 +212,61 @@ img {
 
 @keyframes routeSpin {
   to { transform: rotate(360deg); }
+}
+
+/* Shared filled/ghost buttons used by Auth, Onboarding, Edit Profile */
+.mac-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 120px;
+  padding: 0 22px;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default),
+    transform var(--duration-fast) var(--ease-spring),
+    box-shadow var(--duration-fast) var(--ease-default),
+    opacity var(--duration-fast) var(--ease-default);
+}
+
+.mac-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.mac-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mac-btn--filled {
+  color: #fff;
+  background: var(--accent-blue);
+  box-shadow: 0 1px 4px var(--accent-blue-glow);
+}
+
+.mac-btn--filled:hover:not(:disabled) {
+  background: var(--accent-blue-hover);
+  box-shadow: 0 4px 16px var(--accent-blue-glow);
+}
+
+.mac-btn--ghost {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-color: var(--separator);
+}
+
+.mac-btn--ghost:hover:not(:disabled) {
+  background: var(--border);
 }
 
 /* Shared OPUS controls - use across home, find-jobs, modals, panels */

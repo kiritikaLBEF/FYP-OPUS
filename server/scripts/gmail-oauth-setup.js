@@ -1,12 +1,3 @@
-/**
- * One-time setup: obtain GMAIL_REFRESH_TOKEN for verifymyopus@gmail.com
- *
- * 1. Google Cloud Console → APIs & Services → enable Gmail API
- * 2. OAuth consent screen → add scope https://mail.google.com/
- * 3. Credentials → OAuth client (Web) → add redirect https://developers.google.com/oauthplayground
- * 4. Run: node scripts/gmail-oauth-setup.js
- * 5. Paste auth code → copy refresh token into server/.env as GMAIL_REFRESH_TOKEN
- */
 import '../config/env.js';
 import readline from 'readline';
 import { OAuth2Client } from 'google-auth-library';

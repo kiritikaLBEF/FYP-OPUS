@@ -1,0 +1,35 @@
+OPUS FYP - AWS notes (us-east-1)
+================================
+
+Created for deployment testing. App instance sits in a private subnet.
+Outbound traffic goes through the NAT Gateway. Public traffic hits the ALB on port 80.
+
+App URL (while ALB + EC2 are running):
+  http://opus-fyp-alb-2121090525.us-east-1.elb.amazonaws.com/
+
+API health:
+  http://opus-fyp-alb-2121090525.us-east-1.elb.amazonaws.com/api/health
+
+Redeploy after code changes:
+  ./deploy-opus.sh
+
+If the app fails with Atlas bad auth, reset the DB user password in Atlas,
+update server/.env MONGODB_URI (URL-encode special characters), then run
+deploy-opus.sh again (or only sync .env and restart opus.service).
+
+Resource IDs are in resources.env (do not commit secrets; key file is local only).
+
+MongoDB Atlas:
+  Add the NAT public IP to Network Access so the private EC2 can reach Atlas.
+  Current NAT public IP: 100.56.85.112/32
+  (If you recreate NAT later, the IP may change. Update Atlas again.)
+
+S3 uploads bucket:
+  opus-fyp-uploads-964641149080
+
+Cost control:
+  ./delete-demo-costly.sh   removes ALB, EC2, NAT, EIP (stops the expensive parts)
+  VPC / subnets / SGs / S3 stay for next time
+
+SSH key (private instance usually uses SSM instead):
+  infra/aws/opus-fyp-key.pem

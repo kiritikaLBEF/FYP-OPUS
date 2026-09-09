@@ -45,7 +45,7 @@ export interface DashboardAnalyticsProps {
 const CHART_ANIMATION_MS = 1000;
 
 const TOKEN = {
-  line1: '#0071e3',
+  line1: '#326d5c',
   line2: '#34c759',
   gradientStart: 'rgba(0, 113, 227, 0.22)',
   gradientEnd: 'rgba(0, 113, 227, 0)',

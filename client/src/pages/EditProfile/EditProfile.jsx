@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api, getProfileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { calculateProfileCompletion } from '../../utils/profileCompletion';
@@ -347,41 +347,25 @@ export default function EditProfile() {
     return <div className="ep-page"><div className="route-loading"><div className="route-loading__spinner" /></div></div>;
   }
 
+  const mainSections = PROFILE_SECTIONS.filter((s) => s.id !== 'account');
+  const accountSection = PROFILE_SECTIONS.find((s) => s.id === 'account');
+  const AccountIcon = accountSection?.Icon;
+  const accountActive = activeSection === 'account';
+
   return (
     <div className="ep-page">
       {toast && <div className={`ep-toast ep-toast--${toast.type}`} role="status">{toast.msg}</div>}
 
-      <div className="ep-header">
-        <div className="ep-header__inner">
-          <div className="ep-header__left">
-            <Link to="/" className="ep-back">← Back</Link>
-            <h1 className="ep-title">Edit Profile</h1>
-          </div>
-          <div className="ep-header__actions">
-            <button type="button" className="mac-btn mac-btn--ghost ep-mobile-nav-btn" onClick={() => setSidebarOpen(true)} aria-label="Open sections">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <span>{activeMeta?.label}</span>
-            </button>
-          </div>
-        </div>
+      <div className="ep-mobile-bar">
+        <button type="button" className="mac-btn mac-btn--ghost ep-mobile-nav-btn" onClick={() => setSidebarOpen(true)} aria-label="Open sections">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span>{activeMeta?.label}</span>
+        </button>
       </div>
 
       <div className="ep-layout-wrap">
-        <div className="ep-layout-top">
-          <div className="ep-completion-compact" aria-label={`Profile ${completion.percentage}% complete`}>
-            <div className="ep-completion-ring" style={{ '--progress': completion.percentage }}>
-              <svg className="ep-completion-ring__svg" viewBox="0 0 44 44" aria-hidden="true">
-                <circle className="ep-completion-ring__track" cx="22" cy="22" r="18" />
-                <circle className="ep-completion-ring__fill" cx="22" cy="22" r="18" />
-              </svg>
-              <span className="ep-completion-ring__value">{completion.percentage}%</span>
-            </div>
-            <span className="ep-completion-compact__label">Complete</span>
-          </div>
-        </div>
-
         <div className="ep-layout">
           {sidebarOpen && <button type="button" className="ep-sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-label="Close menu" />}
 
@@ -389,35 +373,59 @@ export default function EditProfile() {
             <div className="ep-shell ep-shell--nav">
               <p className="ep-shell__label">Sections</p>
               <nav className="ep-nav" aria-label="Profile sections">
-              {PROFILE_SECTIONS.map((section) => {
-                const Icon = section.Icon;
-                const isActive = activeSection === section.id;
-                const done = getSectionComplete(section.id, form);
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    className={`ep-nav__item ${isActive ? 'ep-nav__item--active' : ''}`}
-                    onClick={() => switchSection(section.id)}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    {isActive && <span className="ep-nav__indicator" aria-hidden="true" />}
-                    <span className="ep-nav__icon"><Icon /></span>
-                    <span className="ep-nav__text">
-                      <span className="ep-nav__label">{section.label}</span>
-                      <span className="ep-nav__sub">{section.subtitle}</span>
-                    </span>
-                    {!done && <span className="ep-nav__dot" title="Incomplete" />}
-                  </button>
-                );
-              })}
+                <div className="ep-nav__list">
+                  {mainSections.map((section) => {
+                    const Icon = section.Icon;
+                    const isActive = activeSection === section.id;
+                    const done = getSectionComplete(section.id, form);
+                    return (
+                      <button
+                        key={section.id}
+                        type="button"
+                        className={`ep-nav__item ${isActive ? 'ep-nav__item--active' : ''}`}
+                        onClick={() => switchSection(section.id)}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        {isActive && <span className="ep-nav__indicator" aria-hidden="true" />}
+                        <span className="ep-nav__icon"><Icon /></span>
+                        <span className="ep-nav__text">
+                          <span className="ep-nav__label">{section.label}</span>
+                          <span className="ep-nav__sub">{section.subtitle}</span>
+                        </span>
+                        {!done && <span className="ep-nav__dot" title="Incomplete" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                {accountSection && AccountIcon && (
+                  <div className="ep-nav__footer">
+                    <button
+                      type="button"
+                      className={`ep-nav__item ${accountActive ? 'ep-nav__item--active' : ''}`}
+                      onClick={() => switchSection('account')}
+                      aria-current={accountActive ? 'page' : undefined}
+                    >
+                      {accountActive && <span className="ep-nav__indicator" aria-hidden="true" />}
+                      <span className="ep-nav__icon"><AccountIcon /></span>
+                      <span className="ep-nav__text">
+                        <span className="ep-nav__label">{accountSection.label}</span>
+                        <span className="ep-nav__sub">{accountSection.subtitle}</span>
+                      </span>
+                    </button>
+                  </div>
+                )}
               </nav>
             </div>
           </aside>
 
           <main className="ep-main">
             <div className="ep-shell ep-shell--panel" key={panelKey}>
-              <PanelHeader title={activeMeta?.label} subtitle={activeMeta?.subtitle} icon={activeMeta?.Icon} />
+              <PanelHeader
+                title={activeMeta?.label}
+                subtitle={activeMeta?.subtitle}
+                icon={activeMeta?.Icon}
+                completion={completion.percentage}
+              />
               <div className="ep-shell__scroll">{renderPanel()}</div>
               <SectionActions
                 visible={SECTION_SAVEABLE.includes(activeSection)}

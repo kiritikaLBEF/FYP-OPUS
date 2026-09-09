@@ -62,7 +62,10 @@
 }
 
 .admin-nav__link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 7px var(--sp-3);
   color: var(--adm-text-secondary);
   text-decoration: none;
@@ -70,6 +73,28 @@
   font-size: 13px;
   font-weight: 500;
   transition: background var(--adm-duration) var(--adm-ease), color var(--adm-duration) var(--adm-ease);
+}
+
+.admin-nav__label {
+  min-width: 0;
+}
+
+.admin-nav__badge {
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4453;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.admin-nav__link--active .admin-nav__badge {
+  background: var(--adm-accent);
 }
 
 .admin-nav__link:hover {
@@ -84,7 +109,7 @@
 }
 
 .admin-nav__link--active:hover {
-  background: rgba(0, 113, 227, 0.16);
+  background: rgba(50, 109, 92, 0.16);
   color: var(--adm-accent);
 }
 
@@ -614,7 +639,7 @@
   background: var(--adm-accent-hover);
   border-color: var(--adm-accent-hover);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.28);
+  box-shadow: 0 2px 8px rgba(50, 109, 92, 0.28);
 }
 
 .admin-btn--danger {

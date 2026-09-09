@@ -71,10 +71,13 @@ export const api = {
   getEmployerNotifications: () => request('/api/employer/notifications'),
   getMyNotifications: () => request('/api/notifications'),
   getUnreadNotificationCount: () => request('/api/notifications/unread-count'),
-  markNotificationsRead: (ids) =>
+  markNotificationsRead: (ids, types) =>
     request('/api/notifications/mark-read', {
       method: 'POST',
-      body: JSON.stringify(ids ? { ids } : {}),
+      body: JSON.stringify({
+        ...(ids ? { ids } : {}),
+        ...(types ? { types } : {}),
+      }),
     }),
   getConversations: ({ archived = false, q = '' } = {}) => {
     const params = new URLSearchParams();
@@ -174,6 +177,7 @@ export const api = {
   getEmployerMessages: () => request('/api/employer/messages'),
 
   getAdminOverview: () => request('/api/admin/overview'),
+  getAdminNavBadges: () => request('/api/admin/nav-badges'),
   getAdminUsers: ({ page = 1, limit = 20, search = '', role = '', status = '', minFlags = 0 } = {}) => {
     const q = new URLSearchParams({ page, limit });
     if (search) q.set('search', search);
@@ -234,6 +238,7 @@ export const api = {
 
   getHomepage: () => request('/api/homepage'),
   getPublicFreelancerProfile: (userId) => request(`/api/homepage/freelancers/${userId}`),
+  getPublicEmployerProfile: (userId) => request(`/api/employers/${userId}`),
   getAdminAds: () => request('/api/admin/ads'),
   createAdminAd: (formData) => request('/api/admin/ads', { method: 'POST', body: formData }),
   updateAdminAd: (adId, formData) => request(`/api/admin/ads/${adId}`, { method: 'PUT', body: formData }),
@@ -282,6 +287,15 @@ export const api = {
   },
   getWorkSessions: () => request('/api/workspace'),
   getWorkSession: (sessionId) => request(`/api/workspace/${sessionId}`),
+  getTeamWorkspaces: () => request('/api/team-workspace'),
+  getTeamWorkspace: (teamId) => request(`/api/team-workspace/${teamId}`),
+  startTeamRole: (teamId) => request(`/api/team-workspace/${teamId}/start`, { method: 'POST' }),
+  addTeamUpdate: (teamId, formData) => request(`/api/team-workspace/${teamId}/updates`, { method: 'POST', body: formData }),
+  finalizeTeamRole: (teamId, body) => request(`/api/team-workspace/${teamId}/finalize-role`, { method: 'POST', body: JSON.stringify(body) }),
+  reviewTeamUpdate: (teamId, updateId, body) => request(`/api/team-workspace/${teamId}/updates/${updateId}/review`, { method: 'POST', body: JSON.stringify(body) }),
+  completeTeamProject: (teamId) => request(`/api/team-workspace/${teamId}/complete`, { method: 'POST' }),
+  payTeamWorkspace: (teamId) => request(`/api/team-workspace/${teamId}/pay`, { method: 'POST' }),
+  toggleTeamGuideline: (teamId, guidelineId, body) => request(`/api/team-workspace/${teamId}/guidelines/${guidelineId}/toggle`, { method: 'POST', body: JSON.stringify(body) }),
   startWorkSession: (sessionId) => request(`/api/workspace/${sessionId}/start`, { method: 'POST' }),
   sendWorkStartReminder: (sessionId) => request(`/api/workspace/${sessionId}/remind-start`, { method: 'POST' }),
   addWorkUpdate: (sessionId, formData) => request(`/api/workspace/${sessionId}/updates`, { method: 'POST', body: formData }),

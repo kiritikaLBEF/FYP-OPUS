@@ -8,7 +8,7 @@ import './TaskWorkspace.css';
 const STEPS = ['Started', 'In progress', 'Final submitted', 'Awaiting payment', 'Paid', 'Certified'];
 
 const CATEGORY_META = {
-  technical: { label: 'Technical', accent: '#0284c7', soft: '#eff8ff', icon: 'code' },
+  technical: { label: 'Technical', accent: '#326d5c', soft: '#e5f0ec', icon: 'code' },
   design: { label: 'Design', accent: '#7c3aed', soft: '#f5f3ff', icon: 'palette' },
   submission: { label: 'Submission', accent: '#b45309', soft: '#fffbeb', icon: 'upload' },
 };
@@ -1270,9 +1270,6 @@ export default function TaskWorkspace() {
     <div className="tw-page">
       <div className="tw-shell">
         <header className="tw-titlebar">
-          <div className="tw-dots" aria-hidden="true">
-            <span /><span /><span />
-          </div>
           <div className="tw-titlebar__label">
             {role === 'employer' ? 'Check Status: Task Workspace' : 'My Bids: Task Workspace'}
           </div>
@@ -1280,7 +1277,10 @@ export default function TaskWorkspace() {
 
         <div className="tw-header">
           <button type="button" className="tw-back" onClick={() => navigate(backPath)}>
-            {Icon.back} {role === 'employer' ? 'Back to Check Status' : 'Back to My Bids'}
+            <span className="tw-back__icon" aria-hidden="true">{Icon.back}</span>
+            <span className="tw-back__text">
+              {role === 'employer' ? 'Back to Check Status' : 'Back to My Bids'}
+            </span>
           </button>
 
           <div className="tw-header__row">
@@ -1288,7 +1288,23 @@ export default function TaskWorkspace() {
               <div className="tw-accepted">{Icon.check} Bid accepted</div>
               <h1>{session.title}</h1>
               <p>
-                {session.organizationName} · {session.categoryLabel} · Deadline {fmtDate(session.deadline)}
+                {session.employerUserId && role === 'freelancer' ? (
+                  <button
+                    type="button"
+                    className="tw-org-inline-link"
+                    onClick={() => navigate(`/employers/${session.employerUserId}`, {
+                      state: {
+                        from: `/dashboard/workspace/${sessionId}`,
+                        fromLabel: 'Back to task',
+                      },
+                    })}
+                  >
+                    {session.organizationName}
+                  </button>
+                ) : (
+                  session.organizationName
+                )}
+                {' · '}{session.categoryLabel} · Deadline {fmtDate(session.deadline)}
               </p>
             </div>
             <div className="tw-amount">
@@ -1732,13 +1748,30 @@ export default function TaskWorkspace() {
           <aside className="tw-side">
             <div className="tw-side__scroll">
               <div className="tw-card">
-                <div className="tw-org">
+                <button
+                  type="button"
+                  className={`tw-org${session.employerUserId && role === 'freelancer' ? ' tw-org--link' : ''}`}
+                  disabled={!(session.employerUserId && role === 'freelancer')}
+                  onClick={() => {
+                    if (!(session.employerUserId && role === 'freelancer')) return;
+                    navigate(`/employers/${session.employerUserId}`, {
+                      state: {
+                        from: `/dashboard/workspace/${sessionId}`,
+                        fromLabel: 'Back to task',
+                      },
+                    });
+                  }}
+                >
                   <div className="tw-org__avatar">{orgInitials}</div>
                   <div>
                     <p className="tw-org__name">{session.organizationName}</p>
-                    <p className="tw-org__sub">Verified organization</p>
+                    <p className="tw-org__sub">
+                      {role === 'freelancer' && session.employerUserId
+                        ? 'View organization profile'
+                        : 'Verified organization'}
+                    </p>
                   </div>
-                </div>
+                </button>
                 <div className="tw-side-meta">
                   <div><span>Category</span><em>{session.categoryLabel}</em></div>
                   <div><span>Deadline</span><em>{fmtDate(session.deadline)}</em></div>

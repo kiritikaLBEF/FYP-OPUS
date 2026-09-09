@@ -184,6 +184,36 @@
   width: 100%;
   margin-top: 6px;
   min-width: unset;
+  min-height: 44px;
+  padding: 10px 22px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+  background: var(--accent-blue);
+  border: none;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 1px 4px var(--accent-blue-glow);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    transform var(--duration-fast) var(--ease-spring),
+    opacity var(--duration-fast) var(--ease-default);
+}
+
+.auth-modal__submit:hover:not(:disabled) {
+  background: var(--accent-blue-hover);
+  box-shadow: 0 4px 16px var(--accent-blue-glow);
+}
+
+.auth-modal__submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.auth-modal__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .auth-modal__google-btn {
@@ -361,12 +391,58 @@
   width: 100%;
 }
 
+.auth-modal__role-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-modal__role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
+}
+
+.auth-modal__role-card:hover {
+  background: var(--accent-blue-soft);
+}
+
+.auth-modal__role-card--active {
+  border-color: var(--accent-blue);
+  background: var(--accent-blue-soft);
+  box-shadow: 0 0 0 3px var(--accent-blue-soft);
+}
+
+.auth-modal__role-card-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-modal__role-card-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .auth-modal__google-hint {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
   text-align: center;
   line-height: 1.5;
-  padding: 8px 4px;
+  padding: 0 4px;
 }
 
 .auth-modal__google-hint code {

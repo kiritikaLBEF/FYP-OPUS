@@ -6,10 +6,16 @@
   line-height: 0;
 }
 
-.opus-badge--sm {
-  width: 32px;
-  height: 41px;
+.opus-badge--xs {
+  width: 18px;
+  height: 23px;
 }
+
+.opus-badge--xs .opus-badge__svg {
+  width: 18px;
+  height: 23px;
+}
+
 
 .opus-badge--lg {
   width: 52px;

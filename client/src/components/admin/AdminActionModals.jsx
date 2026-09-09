@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { api, getProfileUrl } from '../../services/api';
 import { formatDate, userName } from '../../pages/Admin/adminHelpers';
@@ -34,7 +33,7 @@ function DocPreview({ label, path }) {
 }
 
 export default function AdminActionModals() {
-  const { modal, closeModal } = useAdmin();
+  const { modal, closeModal, refreshBadges } = useAdmin();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [templates, setTemplates] = useState([]);
@@ -101,6 +100,9 @@ export default function AdminActionModals() {
   const finish = (result) => {
     modal.onComplete?.(result);
     closeModal();
+    if (result?.approved || result?.rejected || result?.suspended || result?.flagged) {
+      refreshBadges();
+    }
   };
 
   const handleSendNote = async () => {
@@ -353,7 +355,6 @@ export default function AdminActionModals() {
         footer={(
           <>
             <button type="button" className="admin-btn" onClick={closeModal}>Cancel</button>
-            <Link to={`/admin/users/${user.id}`} className="admin-btn admin-btn--ghost" onClick={closeModal}>Open profile</Link>
             <div style={{ flex: 1 }} />
             {!isAlreadyVerified && (
               <>
@@ -418,14 +419,6 @@ export default function AdminActionModals() {
                   onChange={(e) => setRejectReasonDetail(e.target.value)}
                   rows={3}
                 />
-                <div className="adm-modal-verify-actions">
-                  <button type="button" className="admin-btn admin-btn--danger" disabled={busy || !rejectReasonCategory} onClick={handleReject}>
-                    {busy ? 'Processing…' : 'Reject profile'}
-                  </button>
-                  <button type="button" className="admin-btn admin-btn--primary" disabled={busy} onClick={handleApprove}>
-                    {busy ? 'Processing…' : 'Approve profile'}
-                  </button>
-                </div>
               </div>
             )}
           </div>

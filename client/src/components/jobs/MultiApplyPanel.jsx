@@ -17,6 +17,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [appliedRoles, setAppliedRoles] = useState(job.appliedRoleKeys || []);
+  const [locked, setLocked] = useState(!!(job.lockedToOneRole || job.hasApplied || job.mySquadBid || (job.appliedRoleKeys || []).length));
 
   const [squadName, setSquadName] = useState('');
   const [squadMessage, setSquadMessage] = useState('');
@@ -25,12 +26,33 @@ export default function MultiApplyPanel({ job, onApplied }) {
   const [inviteQuery, setInviteQuery] = useState('');
   const [inviteRoleKey, setInviteRoleKey] = useState('');
   const [searchHits, setSearchHits] = useState([]);
-  const [squad, setSquad] = useState(null);
+  const [squad, setSquad] = useState(job.mySquadBid || null);
 
   const openRoles = useMemo(
     () => (job.roles || []).filter((r) => r.status !== 'filled'),
     [job.roles],
   );
+
+  useEffect(() => {
+    setAppliedRoles(job.appliedRoleKeys || []);
+    setLocked(!!(job.lockedToOneRole || job.hasApplied || job.mySquadBid || (job.appliedRoleKeys || []).length));
+  }, [job]);
+
+  useEffect(() => {
+    if (!job.mySquadBid?.id) return undefined;
+    let cancelled = false;
+    api.getMySquadBids?.()
+      .then((d) => {
+        if (cancelled) return;
+        const match = (d.squads || []).find((s) => String(s.id) === String(job.mySquadBid.id));
+        if (match) {
+          setSquad(match);
+          setMode('squad');
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [job.mySquadBid?.id]);
 
   useEffect(() => {
     if (!allowRole && allowSquad) setMode('squad');
@@ -73,6 +95,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
         message,
       });
       setAppliedRoles((prev) => [...prev, role.roleKey]);
+      setLocked(true);
       setExpandedRole(null);
       onApplied?.();
     } catch (err) {
@@ -151,6 +174,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
         next = submitted.squad;
       }
       setSquad(next);
+      setLocked(true);
       onApplied?.();
     } catch (err) {
       setError(err.message || 'Failed to create squad');
@@ -166,6 +190,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
     try {
       const res = await api.submitSquadBid(squad.id);
       setSquad(res.squad);
+      setLocked(true);
       onApplied?.();
     } catch (err) {
       setError(err.message || 'Cannot submit yet');
@@ -180,7 +205,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
     <div className="multi-apply">
       <p className="multi-apply__label">Multi-freelancer project · {(job.roles || []).length} roles</p>
 
-      {(allowRole && allowSquad) && (
+      {(allowRole && allowSquad) && !locked && (
         <div className="multi-apply__toggle">
           <button type="button" className={mode === 'solo' ? 'is-active' : ''} onClick={() => setMode('solo')}>
             <strong>Bid on a single role</strong>
@@ -193,6 +218,12 @@ export default function MultiApplyPanel({ job, onApplied }) {
         </div>
       )}
 
+      {locked && (
+        <p className="multi-apply__banner">
+          You already submitted a bid on this project. You can only apply to one role (solo or via one squad).
+        </p>
+      )}
+
       {error && <p className="multi-apply__error">{error}</p>}
 
       {mode === 'solo' && allowRole && (
@@ -200,15 +231,16 @@ export default function MultiApplyPanel({ job, onApplied }) {
           {(job.roles || []).map((role) => {
             const filled = role.status === 'filled';
             const already = appliedRoles.includes(role.roleKey);
+            const lockedOut = locked && !already;
             const open = expandedRole === role.roleKey;
             return (
               <div key={role.roleKey} className="multi-apply__role">
                 <button
                   type="button"
                   className="multi-apply__role-head"
-                  disabled={filled || already}
+                  disabled={filled || already || lockedOut}
                   onClick={() => {
-                    if (filled || already) return;
+                    if (filled || already || lockedOut) return;
                     setExpandedRole(open ? null : role.roleKey);
                     setBidAmount(String(role.budgetAmount || ''));
                     setDelivery('');
@@ -222,8 +254,8 @@ export default function MultiApplyPanel({ job, onApplied }) {
                   <div className="multi-apply__role-meta">
                     <em>{fmt(role.budgetAmount)}</em>
                     <small>{role.budgetPercent}% of budget</small>
-                    <span className={`multi-apply__pill ${filled || already ? 'is-done' : 'is-open'}`}>
-                      {filled ? 'Filled' : already ? 'Bid sent' : 'Open'}
+                    <span className={`multi-apply__pill ${filled || already || lockedOut ? 'is-done' : 'is-open'}`}>
+                      {filled ? 'Filled' : already ? 'Bid sent' : lockedOut ? 'Locked' : 'Open'}
                     </span>
                   </div>
                 </button>
@@ -232,7 +264,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
                     <div className="multi-apply__row">
                       <label>
                         Your bid (रू)
-                        <input type="number" value={bidAmount} onChange={(e) => setBidAmount(e.target.value)} />
+                        <input type="number" value={bidAmount || role.budgetAmount || 0} readOnly disabled />
                       </label>
                       <label>
                         Estimated delivery
@@ -257,7 +289,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
       {mode === 'squad' && allowSquad && (
         <div className="multi-apply__squad">
           <div className="multi-apply__banner">
-            Every invited member must accept their role and split before the squad bid can be submitted.
+            Squads need at least 2 members. Every invited member must accept their role before the squad bid can be submitted to the employer. You can cover only some of the open roles — the employer may fill the rest from role-based bids.
           </div>
 
           {squad ? (
@@ -286,7 +318,12 @@ export default function MultiApplyPanel({ job, onApplied }) {
               {squad.status === 'submitted' && (
                 <p className="multi-apply__ok">✓ Squad bid submitted - you’ll be notified if selected</p>
               )}
+              {squad.status && !['forming', 'submitted'].includes(squad.status) && (
+                <p className="multi-apply__ok">Squad status: {squad.status}</p>
+              )}
             </div>
+          ) : locked ? (
+            <p className="multi-apply__ok">You already have a bid on this project, so a new squad cannot be created.</p>
           ) : (
             <>
               <label>
@@ -317,18 +354,7 @@ export default function MultiApplyPanel({ job, onApplied }) {
                       <strong>{s.name}</strong>
                       <span>{s.roleName}</span>
                     </div>
-                    <input
-                      type="number"
-                      value={s.splitAmount}
-                      onChange={(e) =>
-                        setSlots((prev) =>
-                          prev.map((x) =>
-                            x.freelancerId === s.freelancerId
-                              ? { ...x, splitAmount: e.target.value }
-                              : x,
-                          ),
-                        )}
-                    />
+                    <em>{fmt(s.splitAmount)}</em>
                     <button
                       type="button"
                       className="multi-apply__remove"
@@ -373,8 +399,17 @@ export default function MultiApplyPanel({ job, onApplied }) {
               </label>
 
               <div className="multi-apply__sum">Combined bid: {fmt(combined)}</div>
-              <button type="button" className="multi-apply__submit" disabled={busy} onClick={createAndMaybeSubmitSquad}>
-                {busy ? 'Saving…' : slots.length ? 'Create squad & send invites' : 'Create solo-role squad draft'}
+              <button
+                type="button"
+                className="multi-apply__submit"
+                disabled={busy || slots.length < 1}
+                onClick={createAndMaybeSubmitSquad}
+              >
+                {busy
+                  ? 'Saving…'
+                  : slots.length < 1
+                    ? 'Invite at least 1 teammate (squad needs 2+)'
+                    : 'Create squad & send invites'}
               </button>
             </>
           )}

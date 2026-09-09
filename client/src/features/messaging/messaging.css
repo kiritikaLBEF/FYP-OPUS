@@ -131,7 +131,7 @@
 
 .msg-pane__tabs button.is-active {
   background: #fff;
-  color: #007aff;
+  color: #326d5c;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -145,7 +145,7 @@
   overflow-x: hidden;
   overflow-y: hidden;
   background:
-    radial-gradient(ellipse at top, rgba(0, 122, 255, 0.04), transparent 50%),
+    radial-gradient(ellipse at top, rgba(50, 109, 92, 0.04), transparent 50%),
     #ffffff;
   box-shadow: 0 12px 40px -28px rgba(15, 23, 42, 0.35);
 }
@@ -186,16 +186,16 @@
 }
 
 .msg-list__item:hover {
-  background: rgba(0, 122, 255, 0.08);
+  background: rgba(50, 109, 92, 0.08);
 }
 
 .msg-list__item--active {
-  background: #007aff;
+  background: #326d5c;
   color: #fff;
 }
 
 .msg-list__item--active:hover {
-  background: #0066d6;
+  background: #2a5c4e;
   color: #fff;
 }
 
@@ -210,7 +210,7 @@
   border-radius: 50%;
   overflow: hidden;
   background: linear-gradient(145deg, #dbeafe, #bfdbfe);
-  color: #1d4ed8;
+  color: #2a5c4e;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -281,7 +281,7 @@
 
 .msg-list__item--active .msg-list__row--sub em {
   background: #fff;
-  color: #007aff;
+  color: #326d5c;
 }
 
 .msg-thread {
@@ -303,7 +303,7 @@
   justify-content: center;
   color: var(--text-tertiary, #52525b);
   background:
-    radial-gradient(circle at 30% 20%, rgba(0, 122, 255, 0.06), transparent 40%),
+    radial-gradient(circle at 30% 20%, rgba(50, 109, 92, 0.06), transparent 40%),
     #fafafa;
 }
 
@@ -331,6 +331,16 @@
   color: #1d1d1f;
 }
 
+.msg-thread__peer-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.msg-thread__peer-link:hover strong {
+  color: #326d5c;
+  text-decoration: underline;
+}
+
 .msg-thread__head span {
   display: block;
   margin-top: 2px;
@@ -346,9 +356,9 @@
 }
 
 .msg-head-action {
-  border: 1px solid rgba(0, 122, 255, 0.35);
-  background: rgba(0, 122, 255, 0.08);
-  color: #007aff;
+  border: 1px solid rgba(50, 109, 92, 0.35);
+  background: rgba(50, 109, 92, 0.08);
+  color: #326d5c;
   border-radius: 999px;
   padding: 7px 12px;
   font-size: 0.78rem;
@@ -358,17 +368,17 @@
 }
 
 .msg-head-action:hover {
-  background: rgba(0, 122, 255, 0.14);
+  background: rgba(50, 109, 92, 0.14);
 }
 
 .msg-head-action--primary {
-  background: #007aff;
-  border-color: #007aff;
+  background: #326d5c;
+  border-color: #326d5c;
   color: #fff;
 }
 
 .msg-head-action--primary:hover {
-  background: #0066d6;
+  background: #2a5c4e;
 }
 
 .msg-bubble-row {
@@ -505,7 +515,7 @@
   border: none;
   border-radius: 999px;
   padding: 8px 14px;
-  background: #007aff;
+  background: #326d5c;
   color: #fff;
   font-weight: 650;
   cursor: pointer;
@@ -518,7 +528,7 @@
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: #007aff;
+  color: #326d5c;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -526,7 +536,7 @@
 }
 
 .msg-icon-btn:hover {
-  background: rgba(0, 122, 255, 0.1);
+  background: rgba(50, 109, 92, 0.1);
 }
 
 .msg-thread__body {
@@ -590,7 +600,7 @@
 
 .msg-bubble--mine {
   align-self: flex-end;
-  background: #007aff;
+  background: #326d5c;
   color: #fff;
   border-bottom-right-radius: 5px;
 }
@@ -679,7 +689,7 @@
   border: none;
   border-radius: 50%;
   background: #e9e9eb;
-  color: #007aff;
+  color: #326d5c;
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
@@ -739,8 +749,8 @@
 }
 
 .msg-composer input[type='text']:focus {
-  border-color: rgba(0, 122, 255, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+  border-color: rgba(50, 109, 92, 0.45);
+  box-shadow: 0 0 0 3px rgba(50, 109, 92, 0.12);
   background: #fff;
 }
 
@@ -750,7 +760,7 @@
   padding: 0 18px;
   height: 36px;
   font-weight: 650;
-  background: #007aff;
+  background: #326d5c;
   color: #fff;
   cursor: pointer;
   transition: filter 0.15s ease;
@@ -837,7 +847,7 @@
 
 .msg-msg-info button {
   border: none;
-  background: #007aff;
+  background: #326d5c;
   color: #fff;
   border-radius: 8px;
   padding: 4px 8px;
@@ -1095,9 +1105,9 @@
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: #007aff;
+  background: #326d5c;
   color: #fff;
-  box-shadow: 0 12px 28px rgba(0, 122, 255, 0.4);
+  box-shadow: 0 12px 28px rgba(50, 109, 92, 0.4);
   cursor: pointer;
   display: grid;
   place-items: center;

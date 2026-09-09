@@ -6,10 +6,15 @@ export const getSuperAdminEmail = () =>
 export const getSuperAdminPassword = () =>
   (process.env.SUPER_ADMIN_PASSWORD || 'ChangeMeSuperAdmin123!').trim();
 
+/** Capability check: any account with super_admin tier. */
 export const isSuperAdminUser = (user) =>
   !!user
   && user.role === 'admin'
-  && user.adminTier === 'super_admin'
+  && user.adminTier === 'super_admin';
+
+/** Bootstrap / env root account — protected from delete, deactivate, and demotion. */
+export const isRootSuperAdmin = (user) =>
+  isSuperAdminUser(user)
   && user.email?.toLowerCase() === getSuperAdminEmail();
 
 export const ensureSuperAdmin = async () => {

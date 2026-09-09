@@ -289,7 +289,7 @@ export default function EmployerPostJobs() {
                       setBudgetType('fixed');
                     }}
                   >
-                    <strong>Several freelancers</strong>
+                    <strong>Multi freelancers</strong>
                     <span>Split the job into roles.</span>
                   </button>
                 </div>
@@ -366,6 +366,27 @@ export default function EmployerPostJobs() {
               </Field>
             </section>
 
+            <section className="emp-post-section">
+              <h2>Pay and deadline</h2>
+              <div className="emp-post-grid-2">
+                <Field label="Budget">
+                  {projectMode === 'single' && (
+                    <div className="emp-post-seg">
+                      <Seg active={budgetType === 'fixed'} onClick={() => setBudgetType('fixed')}>Fixed</Seg>
+                      <Seg active={budgetType === 'hourly'} onClick={() => setBudgetType('hourly')}>Hourly</Seg>
+                    </div>
+                  )}
+                  <div className="emp-post-input-wrap">
+                    <span className="emp-post-input-prefix">NPR</span>
+                    <input className="emp-post-input" value={budgetType === 'fixed' ? amount : hourly} onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); if (budgetType === 'fixed') setAmount(v); else setHourly(v); }} placeholder={budgetType === 'fixed' ? '25000' : '800'} />
+                  </div>
+                </Field>
+                <Field label="Application deadline">
+                  <input type="date" className="emp-post-input" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                </Field>
+              </div>
+            </section>
+
             {projectMode === 'multi' && (
               <section className="emp-post-section">
                 <h2>Roles</h2>
@@ -387,15 +408,18 @@ export default function EmployerPostJobs() {
                             value={r.description}
                             onChange={(e) => updateRole(r.key, { description: e.target.value })}
                           />
-                          <input
-                            className="emp-post-input emp-post-role-pct"
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={r.budgetPercent}
-                            onChange={(e) => updateRole(r.key, { budgetPercent: e.target.value })}
-                            aria-label="Budget percent"
-                          />
+                          <div className="emp-post-pct-wrap">
+                            <input
+                              className="emp-post-input emp-post-role-pct"
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={r.budgetPercent}
+                              onChange={(e) => updateRole(r.key, { budgetPercent: e.target.value })}
+                              aria-label="Budget percent"
+                            />
+                            <span className="emp-post-pct-symbol">%</span>
+                          </div>
                           <span className="emp-post-role-amt">NPR {amt.toLocaleString('en-NP')}</span>
                           <button type="button" className="emp-post-role-remove" onClick={() => removeRole(r.key)} aria-label="Remove role">Remove</button>
                         </div>
@@ -403,33 +427,12 @@ export default function EmployerPostJobs() {
                     })}
                     <button type="button" className="emp-post-add-role" onClick={addRole}>Add role</button>
                     <div className={`emp-post-budget-sum ${Math.round(rolePctSum) === 100 ? 'is-ok' : 'is-warn'}`}>
-                      {Math.round(rolePctSum)}% allocated
+                      {Math.round(rolePctSum)}% of budget for this project allocated
                     </div>
                   </div>
                 </Field>
               </section>
             )}
-
-            <section className="emp-post-section">
-              <h2>Pay and deadline</h2>
-              <div className="emp-post-grid-2">
-                <Field label="Budget">
-                  {projectMode === 'single' && (
-                    <div className="emp-post-seg">
-                      <Seg active={budgetType === 'fixed'} onClick={() => setBudgetType('fixed')}>Fixed</Seg>
-                      <Seg active={budgetType === 'hourly'} onClick={() => setBudgetType('hourly')}>Hourly</Seg>
-                    </div>
-                  )}
-                  <div className="emp-post-input-wrap">
-                    <span className="emp-post-input-prefix">NPR</span>
-                    <input className="emp-post-input" value={budgetType === 'fixed' ? amount : hourly} onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); if (budgetType === 'fixed') setAmount(v); else setHourly(v); }} placeholder={budgetType === 'fixed' ? '25000' : '800'} />
-                  </div>
-                </Field>
-                <Field label="Application deadline">
-                  <input type="date" className="emp-post-input" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-                </Field>
-              </div>
-            </section>
 
             <section className="emp-post-section">
               <h2>Cover</h2>

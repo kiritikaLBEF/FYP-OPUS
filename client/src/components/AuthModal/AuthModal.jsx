@@ -267,6 +267,9 @@ export default function AuthModal() {
   const [employerForm, setEmployerForm] = useState(emptyEmployerSignUp);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googlePending, setGooglePending] = useState(null);
+  const [googleRole, setGoogleRole] = useState('freelancer');
+  const [googleOrgName, setGoogleOrgName] = useState('');
 
   useEffect(() => {
     if (!modal || modal === 'otp' || modal === 'onboarding' || modal === 'logout') {
@@ -287,15 +290,42 @@ export default function AuthModal() {
   }, [modal, closeModal]);
 
   useEffect(() => {
-    if (modal === 'signin' || modal === 'forgot') {
+    if (modal === 'signin' || modal === 'forgot' || modal === 'signup') {
       setError('');
       setLoading(false);
+      if (modal !== 'signin') {
+        setGooglePending(null);
+        setGoogleRole('freelancer');
+        setGoogleOrgName('');
+      }
     }
   }, [modal]);
 
   if (!modal || modal === 'otp' || modal === 'onboarding' || modal === 'logout') return null;
 
   const isEmployerSignUp = signUpRole === 'employer';
+
+  const finishGoogleAuth = (data) => {
+    if (data.needsOtp || data.onboardingStep === 'otp') {
+      const email = data.email || data.user?.email || '';
+      if (email) setPendingEmail(email);
+      if (data.token || data.user) handleAuthResponse(data);
+      setGooglePending(null);
+      closeModal();
+      openOtp();
+      return;
+    }
+
+    handleAuthResponse(data);
+    setGooglePending(null);
+    closeModal();
+    if (data.needsOnboarding) {
+      openOnboarding();
+    } else {
+      triggerWelcome();
+      navigate(getPostLoginPath(data.user));
+    }
+  };
 
   const handleFreelancerChange = (field) => (e) => {
     setFreelancerForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -355,16 +385,62 @@ export default function AuthModal() {
     setError('');
     setLoading(true);
     try {
+      const credential = credentialResponse.credential;
       const role = modal === 'signup' ? signUpRole : undefined;
-      const data = await api.google({ credential: credentialResponse.credential, ...(role ? { role } : {}) });
-      handleAuthResponse(data);
-      closeModal();
-      if (data.needsOnboarding) {
-        openOnboarding();
-      } else {
-        triggerWelcome();
-        navigate(getPostLoginPath(data.user));
+
+      if (role === 'employer' && !employerForm.organizationName?.trim()) {
+        setError('Enter your organization name before continuing with Google.');
+        setLoading(false);
+        return;
       }
+
+      const payload = {
+        credential,
+        ...(role ? { role } : {}),
+        ...(role === 'employer'
+          ? { organizationName: employerForm.organizationName.trim() }
+          : {}),
+      };
+      const data = await api.google(payload);
+
+      if (data.needsRoleSelection) {
+        setGooglePending({
+          credential,
+          email: data.email || '',
+          firstName: data.firstName || '',
+          picture: data.picture || '',
+        });
+        setGoogleRole('freelancer');
+        setGoogleOrgName('');
+        return;
+      }
+
+      finishGoogleAuth(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleRoleContinue = async (e) => {
+    e.preventDefault();
+    if (!googlePending?.credential) return;
+    setError('');
+
+    if (googleRole === 'employer' && !googleOrgName.trim()) {
+      setError('Enter your organization name to continue as an employer.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await api.google({
+        credential: googlePending.credential,
+        role: googleRole,
+        ...(googleRole === 'employer' ? { organizationName: googleOrgName.trim() } : {}),
+      });
+      finishGoogleAuth(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -381,6 +457,7 @@ export default function AuthModal() {
   const handleBackToSignIn = (prefillEmail) => {
     if (prefillEmail) setEmail(prefillEmail);
     setSignInPassword('');
+    setGooglePending(null);
     openSignIn();
   };
 
@@ -395,6 +472,80 @@ export default function AuthModal() {
 
         {modal === 'forgot' ? (
           <ForgotPasswordFlow onBackToSignIn={handleBackToSignIn} />
+        ) : googlePending ? (
+          <div className="auth-modal__content">
+            <h2 id="auth-modal-title" className="auth-modal__title">Choose how to join</h2>
+            <p className="auth-modal__subtitle">
+              {googlePending.email
+                ? `${googlePending.email} is new to OPUS. Continue as a freelancer or employer.`
+                : 'This Google account is new to OPUS. Continue as a freelancer or employer.'}
+            </p>
+
+            <form className="auth-modal__form" onSubmit={handleGoogleRoleContinue}>
+              <div className="auth-modal__role-cards" role="radiogroup" aria-label="Account type">
+                {[
+                  {
+                    id: 'freelancer',
+                    title: 'Freelancer',
+                    desc: 'Find gigs, bid on jobs, and build your portfolio',
+                  },
+                  {
+                    id: 'employer',
+                    title: 'Employer',
+                    desc: 'Post jobs, hire talent, and manage workspaces',
+                  },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={googleRole === option.id}
+                    className={`auth-modal__role-card ${googleRole === option.id ? 'auth-modal__role-card--active' : ''}`}
+                    onClick={() => setGoogleRole(option.id)}
+                  >
+                    <span className="auth-modal__role-card-title">{option.title}</span>
+                    <span className="auth-modal__role-card-desc">{option.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {googleRole === 'employer' && (
+                <div className="auth-modal__field">
+                  <label htmlFor="google-org-name">Organization name</label>
+                  <input
+                    id="google-org-name"
+                    type="text"
+                    value={googleOrgName}
+                    onChange={(e) => setGoogleOrgName(e.target.value)}
+                    placeholder="Your company or organization"
+                    required
+                  />
+                </div>
+              )}
+
+              {error && <p className="auth-modal__error">{error}</p>}
+
+              <button type="submit" className="mac-btn mac-btn--filled auth-modal__submit" disabled={loading}>
+                {loading
+                  ? 'Continuing…'
+                  : googleRole === 'employer'
+                    ? 'Continue as Employer'
+                    : 'Continue as Freelancer'}
+              </button>
+
+              <button
+                type="button"
+                className="auth-modal__link-btn"
+                onClick={() => {
+                  setGooglePending(null);
+                  setError('');
+                }}
+                disabled={loading}
+              >
+                Use a different Google account
+              </button>
+            </form>
+          </div>
         ) : modal === 'signin' ? (
           <div className="auth-modal__content">
             <h2 id="auth-modal-title" className="auth-modal__title">Welcome back</h2>
@@ -562,17 +713,18 @@ export default function AuthModal() {
                 {loading ? 'Creating account…' : `Sign up as ${isEmployerSignUp ? 'Employer' : 'Freelancer'}`}
               </button>
 
-              {!isEmployerSignUp && (
-                <>
-                  <div className="auth-modal__divider"><span>or</span></div>
+              <div className="auth-modal__divider"><span>or</span></div>
 
-                  <GoogleAuthButton
-                    mode="signup"
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => setError('Google sign-in failed. Check your Google Client ID in client/.env')}
-                    onNotConfigured={handleGoogleNotConfigured}
-                  />
-                </>
+              <GoogleAuthButton
+                mode="signup"
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google sign-in failed. Check your Google Client ID in client/.env')}
+                onNotConfigured={handleGoogleNotConfigured}
+              />
+              {isEmployerSignUp && (
+                <p className="auth-modal__google-hint">
+                  Enter organization name above, then continue with Google to skip email OTP.
+                </p>
               )}
             </form>
 

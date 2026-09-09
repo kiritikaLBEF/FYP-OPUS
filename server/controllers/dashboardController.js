@@ -5,11 +5,13 @@ import JobApplication from '../models/JobApplication.js';
 import JobPosting from '../models/JobPosting.js';
 import ActivityEvent from '../models/ActivityEvent.js';
 import WorkSession from '../models/WorkSession.js';
+import TeamWorkspace from '../models/TeamWorkspace.js';
 import { ensureWorkSessionForApplication } from './workspaceController.js';
 import { ensureFreelancerId } from '../utils/freelancerId.js';
 import { ensureDashboardData, purgeDemoDashboardData } from '../utils/dashboardSeed.js';
 import { calculateProfileCompletion } from '../utils/profileCompletion.js';
 import { generateEStatementPdf } from '../utils/estatementPdf.js';
+import { loadBadgesForUsers } from '../utils/badges.js';
 
 const ACTIVE_SESSION_STATUSES = ['not_started', 'in_progress', 'final_submitted', 'awaiting_payment'];
 const DONE_SESSION_STATUSES = ['paid', 'certified'];
@@ -58,11 +60,15 @@ export const getFreelancerSessionStats = async (userId) => {
   const tasksThisMonth = sessions.filter((s) => new Date(s.updatedAt || s.createdAt) >= thisMonthStart).length;
 
   const monthlyWorkMap = {};
+  const dailyWorkMap = {};
   sessions.forEach((s) => {
     const d = s.startedAt || s.createdAt;
     if (!d) return;
-    const key = new Date(d).toLocaleString('en', { month: 'short' });
+    const dt = new Date(d);
+    const key = dt.toLocaleString('en', { month: 'short' });
     monthlyWorkMap[key] = (monthlyWorkMap[key] || 0) + 1;
+    const dayKey = dt.toISOString().slice(0, 10);
+    dailyWorkMap[dayKey] = (dailyWorkMap[dayKey] || 0) + 1;
   });
   const completionMap = {};
   completed.forEach((s) => {
@@ -71,6 +77,10 @@ export const getFreelancerSessionStats = async (userId) => {
     const key = new Date(d).toLocaleString('en', { month: 'short' });
     completionMap[key] = (completionMap[key] || 0) + 1;
   });
+
+  const workStartedByDay = Object.entries(dailyWorkMap)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   return {
     totalSessions: sessions.length,
@@ -83,6 +93,7 @@ export const getFreelancerSessionStats = async (userId) => {
     completionRate: sessions.length ? Math.round((completed.length / sessions.length) * 100) : 0,
     monthlyWork: Object.entries(monthlyWorkMap).map(([month, count]) => ({ month, count })),
     completionTrend: Object.entries(completionMap).map(([month, count]) => ({ month, count })),
+    workStartedByDay,
     sessions,
   };
 };
@@ -308,9 +319,10 @@ export const getOverview = async (req, res) => {
       tasksThisMonth: work.tasksThisMonth,
     };
 
-    const [activityFeed, spotlightProjects] = await Promise.all([
+    const [activityFeed, spotlightProjects, badgeMap] = await Promise.all([
       ActivityEvent.find({ userId, ...realDataFilter() }).sort({ occurredAt: -1 }).limit(12).lean(),
       WorkProject.find({ ...projectFilter, status: { $ne: 'completed' } }).sort({ bidAcceptedAt: -1 }).limit(3).lean(),
+      loadBadgesForUsers([userId]),
     ]);
 
     res.json({
@@ -320,6 +332,7 @@ export const getOverview = async (req, res) => {
         lastName: req.user.lastName,
         profilePicture: req.user.profilePicture || '',
       },
+      badges: badgeMap.get(String(userId)) || [],
       stats,
       achievements: buildAchievements(stats),
       insights: buildInsights(stats, { thisMonth, lastMonth, changePct }),
@@ -442,6 +455,7 @@ export const getAnalytics = async (req, res) => {
       productivity,
       engagement,
       monthlyWork: sessionStats?.monthlyWork || [],
+      workStartedByDay: sessionStats?.workStartedByDay || [],
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -612,6 +626,7 @@ export const getBids = async (req, res) => {
       await Promise.all(
         jobApps
           .filter((a) => a.status === 'accepted')
+          .filter((a) => jobMap[String(a.jobPostingId)]?.projectMode !== 'multi')
           .map((a) => ensureWorkSessionForApplication(a, jobMap[String(a.jobPostingId)])),
       );
 
@@ -619,6 +634,12 @@ export const getBids = async (req, res) => {
         applicationId: { $in: jobApps.map((a) => a._id) },
       }).lean();
       const sessionMap = Object.fromEntries(sessions.map((s) => [String(s.applicationId), s]));
+
+      const multiJobIds = jobs.filter((j) => j.projectMode === 'multi').map((j) => j._id);
+      const teams = multiJobIds.length
+        ? await TeamWorkspace.find({ jobPostingId: { $in: multiJobIds } }).lean()
+        : [];
+      const teamByJob = Object.fromEntries(teams.map((t) => [String(t.jobPostingId), t]));
 
       const acceptedTotal = await JobApplication.countDocuments({
         freelancerId: req.user._id,
@@ -628,17 +649,37 @@ export const getBids = async (req, res) => {
       return res.json({
         items: jobApps.map((a) => {
           const job = jobMap[String(a.jobPostingId)];
-          const ws = sessionMap[String(a._id)];
+          const isMulti = job?.projectMode === 'multi';
+          const team = isMulti ? teamByJob[String(a.jobPostingId)] : null;
+          const myMember = team?.members?.find(
+            (m) => String(m.freelancerId) === String(req.user._id),
+          );
+          const ws = !isMulti ? sessionMap[String(a._id)] : null;
+
+          let workspaceStatus = ws?.status || null;
+          if (isMulti && team) {
+            if (['paid', 'certified', 'awaiting_payment'].includes(team.status)) {
+              workspaceStatus = team.status;
+            } else if (myMember?.roleStatus === 'role_finalized') {
+              workspaceStatus = 'final_submitted';
+            } else {
+              workspaceStatus = myMember?.roleStatus || team.status || 'not_started';
+            }
+          }
+
           return {
             _id: a._id,
             projectRef: job?.employerRef || '',
             title: a.jobTitle || job?.title || 'Job application',
             organizationName: a.organizationName || job?.organizationName || '',
+            employerUserId: a.employerId || job?.employerId || null,
             amount: job?.budgetType === 'hourly' ? job?.hourlyRate : job?.budget,
             status: a.status,
             occurredAt: a.appliedAt,
+            projectMode: job?.projectMode || 'single',
             workspaceId: ws?._id || null,
-            workspaceStatus: ws?.status || null,
+            teamWorkspaceId: team?._id || null,
+            workspaceStatus,
             category: job?.category || 'other',
             deadline: job?.applicationDeadline || null,
           };

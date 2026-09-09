@@ -19,7 +19,7 @@ export function downloadBadgeCertificate(badge, recipientName) {
   const name = String(recipientName || 'Freelancer').trim() || 'Freelancer';
   const label = badge?.label || 'OPUS Badge';
   const reason = (badge?.description || 'recognized performance on OPUS').replace(/\.$/, '');
-  const color = badge?.color || '#0071e3';
+  const color = badge?.color || '#326d5c';
   const issued = new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
@@ -42,7 +42,7 @@ export function downloadBadgeCertificate(badge, recipientName) {
   ctx.strokeStyle = '#c9a227';
   ctx.strokeRect(48, 48, canvas.width - 96, canvas.height - 96);
 
-  ctx.fillStyle = '#0071e3';
+  ctx.fillStyle = '#326d5c';
   ctx.font = '600 18px -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('OPUS', canvas.width / 2, 100);

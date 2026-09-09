@@ -223,7 +223,7 @@ export default function Home() {
             <div>
               <h2 className="home-section__title">Top Performers</h2>
               <p className="home-section__desc">
-                Freelancers featured by OPUS admin. This stays blank until someone is selected.
+                Featured Freelancer of this Week.
               </p>
             </div>
             {featured.length > 0 && (
@@ -255,7 +255,7 @@ export default function Home() {
                       {primaryBadge && (
                         <span
                           className="home-performer-card__pill"
-                          style={{ background: primaryBadge.color || '#0071e3' }}
+                          style={{ background: primaryBadge.color || '#326d5c' }}
                         >
                           {primaryBadge.label || 'Top Performer'}
                         </span>

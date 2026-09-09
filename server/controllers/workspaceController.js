@@ -7,6 +7,7 @@ import { generateCertificatePdf } from '../utils/certificatePdf.js';
 import { notifyUser } from '../utils/notify.js';
 import { settleJobToFreelancerWallet, splitJobPayment } from '../utils/walletLedger.js';
 import { issueCertificateForPaidSession } from '../utils/workCertificate.js';
+import { buildGuidelinesFromJob } from '../utils/workspaceGuidelines.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -44,23 +45,7 @@ const makeRef = (prefix, seed) =>
 const amountFromJob = (job) =>
   (job?.budgetType === 'hourly' ? job?.hourlyRate : job?.budget) || 0;
 
-const inferGuidelineCategory = (text = '') => {
-  const t = text.toLowerCase();
-  if (/\b(figma|design|ui|ux|visual|brand|layout|color|typography)\b/.test(t)) return 'design';
-  if (/\b(code|api|test|react|node|database|ios|android|technical|integrate|unit)\b/.test(t)) {
-    return 'technical';
-  }
-  return 'submission';
-};
-
-const buildGuidelinesFromJob = (jobDoc) => {
-  const conditions = Array.isArray(jobDoc?.conditions) ? jobDoc.conditions.filter(Boolean) : [];
-  return conditions.map((text) => ({
-    text: String(text).trim(),
-    category: inferGuidelineCategory(text),
-    checked: false,
-  }));
-};
+export { buildGuidelinesFromJob };
 
 const normalizeLegacyStatus = (status) => {
   if (status === 'finalized') return 'final_submitted';
@@ -70,10 +55,12 @@ const normalizeLegacyStatus = (status) => {
 export const ensureWorkSessionForApplication = async (application, job) => {
   if (!application || application.status !== 'accepted') return null;
 
+  const jobDoc = job || await JobPosting.findById(application.jobPostingId).lean();
+  if (jobDoc?.projectMode === 'multi') return null;
+
   let session = await WorkSession.findOne({ applicationId: application._id });
   if (session) return session;
 
-  const jobDoc = job || await JobPosting.findById(application.jobPostingId).lean();
   session = await WorkSession.create({
     applicationId: application._id,
     jobPostingId: application.jobPostingId,
@@ -209,6 +196,7 @@ const serializeSession = (session, role, extras = {}) => {
     role,
     title: session.title,
     organizationName: session.organizationName,
+    employerUserId: session.employerId ? String(session.employerId) : '',
     freelancerName,
     description: session.description || '',
     category: session.category,

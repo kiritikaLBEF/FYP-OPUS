@@ -27,7 +27,7 @@ export default function OpusBadge({
   onDownload,
 }) {
   const key = badge?.key || '';
-  const color = badge?.color || '#0071e3';
+  const color = badge?.color || '#326d5c';
   const label = badge?.label || 'Badge';
   const title = downloadable
     ? `Download ${label} certificate`

@@ -105,14 +105,14 @@
 }
 
 .adm-modal__footer .admin-btn--primary {
-  background: #0071e3;
+  background: #326d5c;
   color: #fff;
-  border-color: #0071e3;
+  border-color: #326d5c;
 }
 
 .adm-modal__footer .admin-btn--primary:hover:not(:disabled) {
-  background: #0077ed;
-  border-color: #0077ed;
+  background: #2a5c4e;
+  border-color: #2a5c4e;
   color: #fff;
 }
 

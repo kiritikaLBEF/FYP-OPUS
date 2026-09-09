@@ -59,6 +59,32 @@ export const squadReadyToSubmit = (squad) => {
 export const recomputeSquadTotal = (squad) =>
   (squad.members || []).reduce((sum, m) => sum + (Number(m.splitAmount) || 0), 0);
 
+export async function freelancerAlreadyBidOnJob(jobId, freelancerId, { exceptSquadId = null } = {}) {
+  const JobApplication = (await import('../models/JobApplication.js')).default;
+  const SquadBid = (await import('../models/SquadBid.js')).default;
+
+  const existingApp = await JobApplication.findOne({
+    jobPostingId: jobId,
+    freelancerId,
+    status: { $ne: 'withdrawn' },
+  }).select('_id roleKey status bidType').lean();
+
+  const squadFilter = {
+    jobPostingId: jobId,
+    status: { $in: ['forming', 'submitted', 'accepted'] },
+    $or: [{ leaderId: freelancerId }, { 'members.freelancerId': freelancerId }],
+  };
+  if (exceptSquadId) squadFilter._id = { $ne: exceptSquadId };
+
+  const existingSquad = await SquadBid.findOne(squadFilter).select('_id name status').lean();
+
+  return {
+    blocked: !!(existingApp || existingSquad),
+    application: existingApp || null,
+    squad: existingSquad || null,
+  };
+}
+
 export const initialsFromUser = (u) => {
   const a = (u?.firstName || '').charAt(0);
   const b = (u?.lastName || '').charAt(0);

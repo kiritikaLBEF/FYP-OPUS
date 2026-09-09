@@ -217,9 +217,17 @@ export const initSocketServer = (httpServer, { clientOrigin }) => {
             lastMessageAt: conversation.lastMessageAt,
             lastMessagePreview: conversation.lastMessagePreview,
             unreadBy: conversation.unreadBy,
+            unreadByMap: conversation.unreadByMap,
           };
-          io.to(`user:${conversation.employerId}`).emit('conversation:updated', updatePayload);
-          io.to(`user:${conversation.freelancerId}`).emit('conversation:updated', updatePayload);
+          if (conversation.kind === 'group') {
+            const ids = (conversation.participantIds || []).map(String);
+            for (const id of ids) {
+              io.to(`user:${id}`).emit('conversation:updated', updatePayload);
+            }
+          } else {
+            io.to(`user:${conversation.employerId}`).emit('conversation:updated', updatePayload);
+            io.to(`user:${conversation.freelancerId}`).emit('conversation:updated', updatePayload);
+          }
         }
 
         ack?.({
@@ -257,10 +265,6 @@ export const initSocketServer = (httpServer, { clientOrigin }) => {
       const conversation = await getConversationForUser(payload?.conversationId, socket.user);
       if (!conversation) return null;
 
-      const peerId = String(conversation.employerId) === socket.userId
-        ? String(conversation.freelancerId)
-        : String(conversation.employerId);
-
       const data = {
         conversationId: String(conversation._id),
         fromUserId: socket.userId,
@@ -272,7 +276,16 @@ export const initSocketServer = (httpServer, { clientOrigin }) => {
         roomName: `opus-conv-${conversation._id}`,
       };
 
-      io.to(`user:${peerId}`).emit(event, data);
+      if (conversation.kind === 'group') {
+        const ids = (conversation.participantIds || []).map(String)
+          .filter((id) => id !== String(socket.userId));
+        for (const id of ids) io.to(`user:${id}`).emit(event, data);
+      } else {
+        const peerId = String(conversation.employerId) === socket.userId
+          ? String(conversation.freelancerId)
+          : String(conversation.employerId);
+        io.to(`user:${peerId}`).emit(event, data);
+      }
       io.to(`conversation:${conversation._id}`).emit(event, data);
       return { conversation, data };
     };
@@ -376,6 +389,16 @@ export const initSocketServer = (httpServer, { clientOrigin }) => {
 export const emitConversationCreated = async (conversation, serializeFor) => {
   if (!ioInstance || !conversation) return;
   try {
+    if (conversation.kind === 'group') {
+      const ids = (conversation.participantIds || []).map(String);
+      for (const id of ids) {
+        const participant = (conversation.participants || []).find((p) => String(p.userId) === id);
+        const role = participant?.role || 'freelancer';
+        const payload = await serializeFor(conversation, { _id: id, role });
+        ioInstance.to(`user:${id}`).emit('conversation:created', payload);
+      }
+      return;
+    }
     const forEmployer = await serializeFor(
       conversation,
       { _id: conversation.employerId, role: 'employer' },

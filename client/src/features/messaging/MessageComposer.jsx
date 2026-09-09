@@ -74,7 +74,7 @@ export default function MessageComposer({ onSend, onTyping, disabled }) {
           type="text"
           value={text}
           onChange={handleChange}
-          placeholder="iMessage"
+          placeholder="Message"
           disabled={disabled}
           maxLength={4000}
           aria-label="Message"

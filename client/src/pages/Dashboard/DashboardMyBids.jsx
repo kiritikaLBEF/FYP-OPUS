@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { fmtDate, fmtNPR } from './dashboardUtils';
 import './DashboardMyBids.css';
+
+const FILTERS = [
+  { id: 'submitted', label: 'Submitted' },
+  { id: 'todo', label: 'To do' },
+  { id: 'progress', label: 'In progress' },
+  { id: 'review', label: 'In review' },
+  { id: 'completed', label: 'Completed' },
+];
 
 function bidStatusLabel(status) {
   return ({ pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', withdrawn: 'Withdrawn' }[status] || status);
@@ -10,15 +18,24 @@ function bidStatusLabel(status) {
 
 function workspaceActionLabel(status) {
   if (!status || status === 'not_started') return 'Start working';
-  if (status === 'certified') return 'Completed';
+  if (status === 'certified' || status === 'paid') return 'Completed';
   return 'Open workspace';
 }
 
 function isWorkspaceCompleted(status) {
-  return status === 'certified';
+  return status === 'certified' || status === 'paid' || status === 'awaiting_payment';
 }
 
-export default function DashboardMyBids() {
+function bidStage(item) {
+  if (item.status !== 'accepted') return 'submitted';
+  const ws = item.workspaceStatus;
+  if (!ws || ws === 'not_started') return 'todo';
+  if (ws === 'in_progress') return 'progress';
+  if (ws === 'final_submitted') return 'review';
+  return 'completed';
+}
+
+export default function DashboardMyBids({ initialFilter = 'submitted', filterKey = 0 }) {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [acceptedCount, setAcceptedCount] = useState(0);
@@ -26,12 +43,18 @@ export default function DashboardMyBids() {
   const [startingId, setStartingId] = useState('');
   const [invites, setInvites] = useState([]);
   const [inviteBusy, setInviteBusy] = useState('');
+  const [filter, setFilter] = useState(initialFilter);
+
+  useEffect(() => {
+    if (!initialFilter) return;
+    setFilter(initialFilter);
+  }, [initialFilter, filterKey]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [data, inviteData] = await Promise.all([
-        api.getBids({ page: 1, limit: 50 }),
+        api.getBids({ page: 1, limit: 100 }),
         api.getMySquadInvites().catch(() => ({ invites: [] })),
       ]);
       setItems(data.items || []);
@@ -48,6 +71,20 @@ export default function DashboardMyBids() {
 
   useEffect(() => { load(); }, [load]);
 
+  const counts = useMemo(() => {
+    const next = { submitted: items.length, todo: 0, progress: 0, review: 0, completed: 0 };
+    items.forEach((item) => {
+      const stage = bidStage(item);
+      if (stage !== 'submitted') next[stage] += 1;
+    });
+    return next;
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    if (filter === 'submitted') return items;
+    return items.filter((item) => bidStage(item) === filter);
+  }, [items, filter]);
+
   const respondInvite = async (squadId, accept) => {
     setInviteBusy(squadId + String(accept));
     try {
@@ -61,6 +98,25 @@ export default function DashboardMyBids() {
   };
 
   const openWorkspace = async (item) => {
+    if (item.teamWorkspaceId) {
+      if (!item.workspaceStatus || item.workspaceStatus === 'not_started') {
+        setStartingId(item._id);
+        try {
+          await api.startTeamRole(item.teamWorkspaceId);
+        } catch (err) {
+          if (!String(err.message || '').includes('already')) {
+            alert(err.message || 'Could not start work');
+            setStartingId('');
+            return;
+          }
+        } finally {
+          setStartingId('');
+        }
+      }
+      navigate(`/dashboard/team-workspace/${item.teamWorkspaceId}`);
+      return;
+    }
+
     if (!item.workspaceId) {
       alert('Workspace is not ready yet. Refresh and try again.');
       return;
@@ -82,12 +138,20 @@ export default function DashboardMyBids() {
     navigate(`/dashboard/workspace/${item.workspaceId}`);
   };
 
+  const emptyCopy = {
+    submitted: { title: 'No bids yet', sub: 'When you apply to jobs, they will appear here.' },
+    todo: { title: 'No tasks to do', sub: 'Accepted bids waiting to start show up here.' },
+    progress: { title: 'No tasks in progress', sub: 'Active workspace sessions show up here.' },
+    review: { title: 'Nothing in review', sub: 'Work waiting on the client lands here.' },
+    completed: { title: 'No completed tasks', sub: 'Finished engagements show up here.' },
+  }[filter];
+
   return (
-    <section className="glass-surface dmb" aria-label="My bids">
+    <section className="dmb" aria-label="My bids">
       <header className="dmb__head">
         <div>
-          <h2 className="dmb__title">My Bids</h2>
-          <p className="dmb__sub">Submitted, pending, and accepted applications in one place</p>
+          <h2 className="dmb__title">My bids</h2>
+          <p className="dmb__sub">Submitted applications and tasks by stage</p>
         </div>
         {acceptedCount > 0 && (
           <div className="dmb-badge" title={`${acceptedCount} accepted bid${acceptedCount === 1 ? '' : 's'}`}>
@@ -96,6 +160,22 @@ export default function DashboardMyBids() {
           </div>
         )}
       </header>
+
+      <div className="dmb-tabs" role="tablist" aria-label="Bid and task filters">
+        {FILTERS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={filter === tab.id}
+            className={`dmb-tab${filter === tab.id ? ' dmb-tab--active' : ''}`}
+            onClick={() => setFilter(tab.id)}
+          >
+            {tab.label}
+            <span className="dmb-tab__count">{counts[tab.id]}</span>
+          </button>
+        ))}
+      </div>
 
       {invites.length > 0 && (
         <div className="dmb-invites">
@@ -135,10 +215,10 @@ export default function DashboardMyBids() {
 
       {loading ? (
         <div className="dmb-loading" role="status" aria-label="Loading bids" />
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="dmb-empty">
-          <p className="dmb-empty__title">No bids yet</p>
-          <p className="dmb-empty__sub">When you apply to jobs, they will appear here.</p>
+          <p className="dmb-empty__title">{emptyCopy.title}</p>
+          <p className="dmb-empty__sub">{emptyCopy.sub}</p>
         </div>
       ) : (
         <div className="dmb-table-wrap">
@@ -154,14 +234,28 @@ export default function DashboardMyBids() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {filtered.map((item) => (
                 <tr key={item._id} className={item.status === 'accepted' ? 'dmb-row--accepted' : ''}>
                   <td>
                     <strong>{item.title}</strong>
                   </td>
-                  <td>{item.organizationName || '-'}</td>
-                  <td>{fmtNPR(item.amount)}</td>
-                  <td>{fmtDate(item.occurredAt)}</td>
+                  <td>
+                    {item.employerUserId ? (
+                      <button
+                        type="button"
+                        className="dmb-org-link"
+                        onClick={() => navigate(`/employers/${item.employerUserId}`, {
+                          state: { from: '/dashboard', fromLabel: 'Back to dashboard' },
+                        })}
+                      >
+                        {item.organizationName || '-'}
+                      </button>
+                    ) : (
+                      item.organizationName || '-'
+                    )}
+                  </td>
+                  <td className="fd-mono">{fmtNPR(item.amount)}</td>
+                  <td className="fd-mono">{fmtDate(item.occurredAt)}</td>
                   <td>
                     <span className={`dmb-pill dmb-pill--${item.status}`}>
                       {bidStatusLabel(item.status)}
@@ -171,7 +265,7 @@ export default function DashboardMyBids() {
                     </span>
                   </td>
                   <td>
-                    {item.status === 'accepted' && item.workspaceId ? (
+                    {item.status === 'accepted' && (item.teamWorkspaceId || item.workspaceId) ? (
                       isWorkspaceCompleted(item.workspaceStatus) ? (
                         <span className="dmb-completed">Completed</span>
                       ) : (

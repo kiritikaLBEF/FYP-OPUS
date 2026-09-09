@@ -1,15 +1,4 @@
 #!/usr/bin/env node
-/**
- * CLI proof helpers for FYP Execution screenshots (VS Code terminal).
- * Does NOT replace architecture figures — only lists evidence from the repo / live API.
- *
- * Usage (from repo root or server/):
- *   node server/scripts/fyp-cli-proof.js modules
- *   node server/scripts/fyp-cli-proof.js pipeline
- *   node server/scripts/fyp-cli-proof.js integration
- *   node server/scripts/fyp-cli-proof.js health
- *   node server/scripts/fyp-cli-proof.js all
- */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -64,7 +53,6 @@ function showPipeline() {
   console.log(`  - ${path.relative(ROOT, authMw)} ${fs.existsSync(authMw) ? '(found)' : '(missing)'}`);
   console.log(`  - ${path.relative(ROOT, uploadMw)} ${fs.existsSync(uploadMw) ? '(found)' : '(missing)'}`);
 
-  // Sample: count protect usages in routes
   const routesDir = path.join(SERVER, 'routes');
   let protectHits = 0;
   for (const f of fs.readdirSync(routesDir).filter((x) => x.endsWith('.js'))) {
@@ -96,7 +84,6 @@ function showIntegration() {
     console.log(`  ${p.padEnd(28)} ${fs.existsSync(full) ? 'OK' : 'missing'}`);
   }
 
-  // Find VITE / API base hints
   const envExamples = ['client/.env', 'client/.env.example', 'server/.env.example'];
   console.log('\nConfig hints (names only, no secrets printed):');
   for (const rel of envExamples) {

@@ -30,7 +30,9 @@ export default function ConversationList({
     <ul className="msg-list">
       {conversations.map((c) => {
         const avatar = c.peer?.profilePicture ? getProfileUrl(c.peer.profilePicture) : '';
-        const initial = (c.peer?.name || '?').slice(0, 1).toUpperCase();
+        const initial = c.kind === 'group'
+          ? 'G'
+          : (c.peer?.name || '?').slice(0, 1).toUpperCase();
         const active = String(c.id) === String(activeId);
         return (
           <li key={c.id}>
@@ -39,12 +41,12 @@ export default function ConversationList({
               className={`msg-list__item ${active ? 'msg-list__item--active' : ''}`}
               onClick={() => onSelect(c.id)}
             >
-              <div className="msg-list__avatar">
-                {avatar ? <img src={avatar} alt="" /> : <span>{initial}</span>}
+              <div className={`msg-list__avatar ${c.kind === 'group' ? 'msg-list__avatar--group' : ''}`}>
+                {avatar && c.kind !== 'group' ? <img src={avatar} alt="" /> : <span>{initial}</span>}
               </div>
               <div className="msg-list__meta">
                 <div className="msg-list__row">
-                  <strong>{c.peer?.name || 'User'}</strong>
+                  <strong>{c.kind === 'group' ? (c.title || c.peer?.name || 'Group') : (c.peer?.name || 'User')}</strong>
                   <span>{fmtTime(c.lastMessageAt)}</span>
                 </div>
                 <div className="msg-list__row msg-list__row--sub">

@@ -1,8 +1,5 @@
 import Notification from '../models/Notification.js';
 
-/**
- * Create an in-app notification for a user. Failures are logged, never thrown.
- */
 export const notifyUser = async ({
   userId,
   type,
@@ -49,12 +46,24 @@ export const listNotificationsForUser = async (userId, { limit = 40 } = {}) => {
   };
 };
 
-export const markNotificationsRead = async (userId, { ids = null } = {}) => {
+export const markNotificationsRead = async (userId, { ids = null, types = null } = {}) => {
   const filter = { userId, read: false };
   if (Array.isArray(ids) && ids.length) {
     filter._id = { $in: ids };
   }
+  if (Array.isArray(types) && types.length) {
+    filter.type = { $in: types };
+  }
   await Notification.updateMany(filter, { $set: { read: true } });
   const unread = await Notification.countDocuments({ userId, read: false });
   return { unread };
+};
+
+export const countUnreadByTypes = async (userId, types = []) => {
+  if (!userId || !types.length) return 0;
+  return Notification.countDocuments({
+    userId,
+    read: false,
+    type: { $in: types },
+  });
 };

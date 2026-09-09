@@ -228,7 +228,7 @@ export function InsightCards({ insights, onAction }) {
 }
 
 export function CategoryDonut({ data }) {
-  const colors = ['#0071e3', '#34c759', '#ff9500', '#af52de', '#5ac8fa', '#ff2d55'];
+  const colors = ['#326d5c', '#34c759', '#ff9500', '#af52de', '#5ac8fa', '#ff2d55'];
   let offset = 0;
   const segments = data.map((d, i) => {
     const seg = { ...d, color: colors[i % colors.length], offset };

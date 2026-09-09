@@ -3,6 +3,7 @@ import { protect, requireAdmin, requireOnboardingComplete, requireSuperAdmin, re
 import { uploadAdImage, handleUpload } from '../middleware/upload.js';
 import {
   getAdminOverview,
+  getAdminNavBadges,
   listUsers,
   getUserDetail,
   updateUser,
@@ -58,6 +59,7 @@ const router = Router();
 router.use(protect, requireOnboardingComplete, requireAdmin);
 
 router.get('/overview', getAdminOverview);
+router.get('/nav-badges', getAdminNavBadges);
 
 router.get('/users/segment/:segment', requireAdminPrivilege('users'), listUsersBySegment);
 router.get('/users', requireAdminPrivilege('users'), listUsers);

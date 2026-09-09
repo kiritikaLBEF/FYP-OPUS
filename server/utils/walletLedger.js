@@ -142,16 +142,6 @@ export async function summarizeWallet(userId) {
     .filter((t) => t.transactionStatus === 'processing' || t.paymentStatus === 'pending')
     .reduce((s, t) => s + (t.debit || 0) + (t.credit || 0), 0);
 
-  const byClient = {};
-  txns.forEach((t) => {
-    const key = t.organizationName || 'Organization';
-    if (t.credit > 0 && t.paymentType === 'milestone') {
-      byClient[key] = roundNpr((byClient[key] || 0) + t.credit);
-    }
-    if (t.debit > 0 && t.paymentType === 'platform_fee') {
-      byClient[key] = roundNpr((byClient[key] || 0) - t.debit);
-    }
-  });
   const platformFees = txns
     .filter((t) => t.paymentType === 'platform_fee')
     .reduce((s, t) => s + (t.debit || 0), 0);
@@ -171,10 +161,6 @@ export async function summarizeWallet(userId) {
       emailReceipts: wallet.settings?.emailReceipts !== false,
       lowBalanceThreshold: Number(wallet.settings?.lowBalanceThreshold ?? 10000),
     },
-    earningsByClient: Object.entries(byClient)
-      .filter(([, amount]) => amount > 0)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, amount]) => ({ name, amount })),
   };
 }
 
@@ -293,14 +279,164 @@ export async function settleJobToFreelancerWallet({
   return { amount: gross, fee, net, feeRate, session };
 }
 
+export async function settleTeamWorkspaceToWallets(team) {
+  if (!team) {
+    const err = new Error('Team workspace not found');
+    err.status = 404;
+    throw err;
+  }
+  if (team.status !== 'awaiting_payment') {
+    const err = new Error('Team payment is not awaiting confirmation');
+    err.status = 400;
+    throw err;
+  }
+
+  const allFinalized = (team.members || []).every((m) =>
+    ['role_finalized', 'paid', 'certified'].includes(m.roleStatus),
+  );
+  if (!allFinalized) {
+    const err = new Error('Finalize every role before paying the team');
+    err.status = 400;
+    throw err;
+  }
+
+  const totalGross = roundNpr(
+    (team.members || []).reduce((sum, m) => sum + Number(m.splitAmount || 0), 0),
+  );
+  if (!(totalGross > 0)) {
+    const err = new Error('No payable split amounts on this team workspace');
+    err.status = 400;
+    throw err;
+  }
+
+  const employerBalance = await getAvailableBalance(team.employerId);
+  if (employerBalance < totalGross) {
+    const err = new Error('OPUS wallet balance is not enough for the full team payout');
+    err.status = 400;
+    err.code = 'INSUFFICIENT_WALLET';
+    err.availableBalance = employerBalance;
+    throw err;
+  }
+
+  const bill = [];
+  for (const member of team.members) {
+    const amount = roundNpr(member.splitAmount);
+    if (!(amount > 0)) continue;
+    const { gross, fee, net, feeRate } = splitJobPayment(amount);
+
+    await appendLedger(team.employerId, {
+      debit: gross,
+      description: `Paid ${member.roleName || 'role'} for "${team.title}"`,
+      paymentType: 'hiring',
+      method: 'opus',
+      organizationName: team.organizationName,
+      projectTitle: team.title,
+      projectRef: team.paymentRef || '',
+      counterpartyUserId: member.freelancerId,
+    });
+
+    await appendLedger(member.freelancerId, {
+      credit: gross,
+      description: `Team payment for "${team.title}" (${member.roleName || 'role'})`,
+      paymentType: 'milestone',
+      method: 'opus',
+      organizationName: team.organizationName,
+      projectTitle: team.title,
+      projectRef: team.paymentRef || '',
+      counterpartyUserId: team.employerId,
+    });
+
+    if (fee > 0) {
+      await appendLedger(member.freelancerId, {
+        debit: fee,
+        description: `OPUS service charge (${Math.round(feeRate * 100)}%) for "${team.title}"`,
+        paymentType: 'platform_fee',
+        method: 'opus',
+        organizationName: team.organizationName,
+        projectTitle: team.title,
+        projectRef: team.paymentRef || '',
+      });
+    }
+
+    member.roleStatus = 'paid';
+    member.paidAt = new Date();
+    if (!member.certificateId) {
+      member.certificateId = `OPUS-CERT-${String(team._id).slice(-4)}${String(member.roleKey).slice(0, 4)}`.toUpperCase();
+    }
+
+    bill.push({
+      freelancerId: member.freelancerId,
+      roleKey: member.roleKey,
+      roleName: member.roleName,
+      gross,
+      fee,
+      net,
+    });
+
+    await notifyUser({
+      userId: member.freelancerId,
+      type: 'payment_confirmed',
+      title: 'Team payment in your OPUS wallet',
+      message: `${team.organizationName || 'The organization'} paid NPR ${gross.toLocaleString('en-NP')} for your ${member.roleName || 'role'} on "${team.title}". OPUS deducted NPR ${fee.toLocaleString('en-NP')} (10% service charge). NPR ${net.toLocaleString('en-NP')} is now in your wallet.`,
+      link: '/wallet',
+      meta: { teamWorkspaceId: team._id, jobId: team.jobPostingId, amount: net, gross, fee },
+    });
+
+    try {
+      const pseudo = {
+        _id: `${team._id}-${member.roleKey}`,
+        freelancerId: member.freelancerId,
+        title: `${team.title} · ${member.roleName || member.roleKey}`,
+        organizationName: team.organizationName,
+        status: 'paid',
+        certificateId: member.certificateId,
+        certificateFilePath: '',
+        certifiedAt: null,
+        certificateAddedToProfile: false,
+        save: async function savePseudo() {
+          member.certificateFilePath = this.certificateFilePath;
+          member.certificateId = this.certificateId;
+          member.roleStatus = 'certified';
+          member.certifiedAt = this.certifiedAt || new Date();
+        },
+      };
+      await issueCertificateForPaidSession(pseudo);
+      member.roleStatus = 'certified';
+      member.certifiedAt = new Date();
+      member.certificateFilePath = pseudo.certificateFilePath || member.certificateFilePath;
+    } catch (certErr) {
+      console.error('Team cert issue failed:', certErr.message);
+    }
+  }
+
+  team.status = 'certified';
+  team.paidAt = new Date();
+  team.certifiedAt = new Date();
+  await team.save();
+
+  return { totalGross, bill, team };
+}
+
 export async function applyTopup({ userId, amount, method, gatewayRef, description }) {
-  return appendLedger(userId, {
+  const result = await appendLedger(userId, {
     credit: amount,
     description: description || `Added from ${method === 'esewa' ? 'eSewa' : 'Khalti'}`,
     paymentType: 'topup',
     method,
     gatewayRef,
   });
+
+  const credited = roundNpr(amount);
+  await notifyUser({
+    userId,
+    type: 'wallet_topup',
+    title: 'Funds added to OPUS wallet',
+    message: `NPR ${credited.toLocaleString('en-NP')} was added from ${method === 'esewa' ? 'eSewa' : 'Khalti'}.`,
+    link: '/wallet',
+    meta: { amount: credited, method },
+  });
+
+  return result;
 }
 
 export async function applyWithdrawal({

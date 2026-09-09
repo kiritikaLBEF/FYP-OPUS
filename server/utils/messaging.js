@@ -74,10 +74,24 @@ export const serializeMessage = (msg, viewerId = null) => {
 
 export const userIsParticipant = (conversation, userId) => {
   const id = String(userId);
+  if (conversation.kind === 'group') {
+    const ids = (conversation.participantIds || []).map(String);
+    if (ids.includes(id)) return true;
+    return (conversation.participants || []).some((p) => String(p.userId) === id);
+  }
   return String(conversation.employerId) === id || String(conversation.freelancerId) === id;
 };
 
 export const roleInConversation = (conversation, user) => {
+  if (conversation.kind === 'group') {
+    const hit = (conversation.participants || []).find((p) => String(p.userId) === String(user._id));
+    if (hit?.role) return hit.role;
+    if (String(conversation.employerId) === String(user._id)) return 'employer';
+    if ((conversation.participantIds || []).some((id) => String(id) === String(user._id))) {
+      return user.role === 'employer' ? 'employer' : 'freelancer';
+    }
+    return null;
+  }
   if (String(conversation.employerId) === String(user._id)) return 'employer';
   if (String(conversation.freelancerId) === String(user._id)) return 'freelancer';
   return null;
@@ -133,8 +147,8 @@ export const resolvePairConversation = async (employerId, freelancerId) => {
 /** Collapse all duplicate pair threads visible to this user. */
 export const dedupeConversationsForUser = async (user) => {
   const filter = user.role === 'employer'
-    ? { employerId: user._id }
-    : { freelancerId: user._id };
+    ? { kind: { $ne: 'group' }, employerId: user._id }
+    : { kind: { $ne: 'group' }, freelancerId: user._id };
   const rows = await Conversation.find(filter).select('employerId freelancerId').lean();
   const seen = new Set();
   for (const c of rows) {
@@ -218,6 +232,7 @@ export const ensureConversationForApplication = async (application, workspaceId 
   }
 
   conversation = await Conversation.create({
+    kind: 'direct',
     employerId: application.employerId,
     freelancerId: application.freelancerId,
     jobPostingId: application.jobPostingId,
@@ -292,6 +307,61 @@ export const notifyConversationConnected = async (application, conversationResul
 
 export const serializeConversation = async (conversation, viewer) => {
   const role = roleInConversation(conversation, viewer);
+
+  if (conversation.kind === 'group') {
+    const memberIds = (conversation.participantIds || []).map(String);
+    const members = await User.find({ _id: { $in: memberIds } })
+      .select('firstName lastName organizationName username profilePicture role')
+      .lean();
+    const memberMap = Object.fromEntries(members.map((u) => [String(u._id), u]));
+    let unread = 0;
+    if (conversation.unreadByMap?.get) {
+      unread = conversation.unreadByMap.get(String(viewer._id)) || 0;
+    } else if (conversation.unreadByMap && typeof conversation.unreadByMap === 'object') {
+      unread = conversation.unreadByMap[String(viewer._id)] || 0;
+    }
+    const archived = (conversation.archivedByUserIds || []).some((id) => String(id) === String(viewer._id));
+
+    return {
+      id: String(conversation._id),
+      kind: 'group',
+      groupType: conversation.groupType || '',
+      title: conversation.title || conversation.jobTitle || 'Group chat',
+      jobTitle: conversation.jobTitle || '',
+      organizationName: conversation.organizationName || '',
+      jobPostingId: conversation.jobPostingId ? String(conversation.jobPostingId) : null,
+      applicationId: null,
+      workSessionId: null,
+      teamWorkspaceId: conversation.teamWorkspaceId ? String(conversation.teamWorkspaceId) : null,
+      collaborationCount: conversation.collaborationCount || 1,
+      lastMessageAt: conversation.lastMessageAt,
+      lastMessagePreview: conversation.lastMessagePreview || '',
+      unread,
+      archived,
+      myRole: role,
+      memberCount: memberIds.length,
+      members: memberIds.map((id) => {
+        const u = memberMap[id];
+        const pRole = (conversation.participants || []).find((p) => String(p.userId) === id)?.role
+          || (u?.role === 'employer' ? 'employer' : 'freelancer');
+        return {
+          id,
+          name: displayName(u, pRole),
+          role: pRole,
+          profilePicture: u?.profilePicture || '',
+        };
+      }),
+      peer: {
+        id: String(conversation._id),
+        name: conversation.title || conversation.jobTitle || 'Group',
+        role: 'group',
+        profilePicture: '',
+        freelancerId: '',
+        employerId: '',
+      },
+    };
+  }
+
   const otherId = role === 'employer' ? conversation.freelancerId : conversation.employerId;
   const other = await User.findById(otherId)
     .select('firstName lastName organizationName username profilePicture freelancerId employerId role')
@@ -301,11 +371,15 @@ export const serializeConversation = async (conversation, viewer) => {
 
   return {
     id: String(conversation._id),
+    kind: 'direct',
+    groupType: '',
+    title: '',
     jobTitle: conversation.jobTitle || '',
     organizationName: conversation.organizationName || '',
     jobPostingId: conversation.jobPostingId ? String(conversation.jobPostingId) : null,
     applicationId: conversation.applicationId ? String(conversation.applicationId) : null,
     workSessionId: conversation.workSessionId ? String(conversation.workSessionId) : null,
+    teamWorkspaceId: null,
     collaborationCount: conversation.collaborationCount || 1,
     lastMessageAt: conversation.lastMessageAt,
     lastMessagePreview: conversation.lastMessagePreview || '',
@@ -344,14 +418,33 @@ export const listConversationsForUser = async (user, { archived = false, q = '' 
   await ensureConversationIndexes();
   await backfillConversationsForUser(user);
 
-  const filter = user.role === 'employer'
-    ? { employerId: user._id }
-    : { freelancerId: user._id };
-
   const roleKey = user.role === 'employer' ? 'employer' : 'freelancer';
-  filter[`archivedBy.${roleKey}`] = archived ? true : { $ne: true };
+  const directFilter = user.role === 'employer'
+    ? { kind: { $ne: 'group' }, employerId: user._id }
+    : { kind: { $ne: 'group' }, freelancerId: user._id };
+  directFilter[`archivedBy.${roleKey}`] = archived ? true : { $ne: true };
 
-  let rows = await Conversation.find(filter).sort({ lastMessageAt: -1 }).lean();
+  const groupFilter = {
+    kind: 'group',
+    $or: [
+      { participantIds: user._id },
+      { 'participants.userId': user._id },
+    ],
+  };
+  if (archived) {
+    groupFilter.archivedByUserIds = user._id;
+  } else {
+    groupFilter.archivedByUserIds = { $ne: user._id };
+  }
+
+  const [directRows, groupRows] = await Promise.all([
+    Conversation.find(directFilter).sort({ lastMessageAt: -1 }).lean(),
+    Conversation.find(groupFilter).sort({ lastMessageAt: -1 }).lean(),
+  ]);
+
+  const rows = [...directRows, ...groupRows].sort(
+    (a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0),
+  );
 
   const serialized = await Promise.all(rows.map((c) => serializeConversation(c, user)));
   const query = String(q || '').trim().toLowerCase();
@@ -360,6 +453,7 @@ export const listConversationsForUser = async (user, { archived = false, q = '' 
   return serialized.filter((c) => {
     const hay = [
       c.peer?.name,
+      c.title,
       c.jobTitle,
       c.organizationName,
       c.lastMessagePreview,
@@ -427,7 +521,17 @@ export const listMessages = async (conversationId, viewerId, { cursor, limit = 4
 export const markConversationRead = async (conversation, user) => {
   const role = roleInConversation(conversation, user);
   if (!role) return conversation;
-  if ((conversation.unreadBy?.[role] || 0) !== 0) {
+
+  if (conversation.kind === 'group') {
+    if (!conversation.unreadByMap) conversation.unreadByMap = new Map();
+    if (conversation.unreadByMap.set) {
+      conversation.unreadByMap.set(String(user._id), 0);
+    } else {
+      conversation.unreadByMap[String(user._id)] = 0;
+    }
+    conversation.markModified('unreadByMap');
+    await conversation.save();
+  } else if ((conversation.unreadBy?.[role] || 0) !== 0) {
     conversation.unreadBy[role] = 0;
     await conversation.save();
   }
@@ -451,6 +555,17 @@ export const setConversationArchived = async (conversation, user, archived) => {
     const err = new Error('Not a participant');
     err.status = 403;
     throw err;
+  }
+  if (conversation.kind === 'group') {
+    const ids = (conversation.archivedByUserIds || []).map(String);
+    if (archived && !ids.includes(String(user._id))) {
+      conversation.archivedByUserIds = [...(conversation.archivedByUserIds || []), user._id];
+    } else if (!archived) {
+      conversation.archivedByUserIds = (conversation.archivedByUserIds || [])
+        .filter((id) => String(id) !== String(user._id));
+    }
+    await conversation.save();
+    return conversation;
   }
   conversation.archivedBy = conversation.archivedBy || { employer: false, freelancer: false };
   conversation.archivedBy[role] = !!archived;
@@ -518,13 +633,34 @@ export const createTextMessage = async ({
     throw err;
   }
 
-  const otherRole = role === 'employer' ? 'freelancer' : 'employer';
   conversation.lastMessageAt = msg.createdAt;
   conversation.lastMessagePreview = preview.slice(0, 160);
-  conversation.unreadBy = conversation.unreadBy || { employer: 0, freelancer: 0 };
-  conversation.unreadBy[otherRole] = (conversation.unreadBy[otherRole] || 0) + 1;
-  conversation.archivedBy = conversation.archivedBy || { employer: false, freelancer: false };
-  conversation.archivedBy[otherRole] = false;
+
+  if (conversation.kind === 'group') {
+    if (!conversation.unreadByMap) conversation.unreadByMap = new Map();
+    const ids = (conversation.participantIds || []).map(String);
+    for (const id of ids) {
+      if (id === String(sender._id)) {
+        if (conversation.unreadByMap.set) conversation.unreadByMap.set(id, 0);
+        else conversation.unreadByMap[id] = 0;
+        continue;
+      }
+      const prev = conversation.unreadByMap.get
+        ? (conversation.unreadByMap.get(id) || 0)
+        : (conversation.unreadByMap[id] || 0);
+      if (conversation.unreadByMap.set) conversation.unreadByMap.set(id, prev + 1);
+      else conversation.unreadByMap[id] = prev + 1;
+    }
+    conversation.markModified('unreadByMap');
+    conversation.archivedByUserIds = (conversation.archivedByUserIds || [])
+      .filter((id) => String(id) !== String(sender._id));
+  } else {
+    const otherRole = role === 'employer' ? 'freelancer' : 'employer';
+    conversation.unreadBy = conversation.unreadBy || { employer: 0, freelancer: 0 };
+    conversation.unreadBy[otherRole] = (conversation.unreadBy[otherRole] || 0) + 1;
+    conversation.archivedBy = conversation.archivedBy || { employer: false, freelancer: false };
+    conversation.archivedBy[otherRole] = false;
+  }
   await conversation.save();
 
   return { message: serializeMessage(msg, sender._id), duplicate: false, conversation };

@@ -30,9 +30,9 @@
 
 .dash-pager__btn--active {
   color: #fff;
-  background: linear-gradient(180deg, #0077ed, #0071e3);
+  background: linear-gradient(180deg, #3d7f6c, #326d5c);
   border-color: transparent;
-  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+  box-shadow: 0 2px 8px rgba(50, 109, 92, 0.3);
 }
 
 .dash-pager__btn--active:hover {

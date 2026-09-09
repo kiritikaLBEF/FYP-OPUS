@@ -478,8 +478,23 @@
   align-items: center;
 }
 
+.emp-post-pct-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .emp-post-role-pct {
   text-align: center;
+  padding-right: 22px;
+}
+
+.emp-post-pct-symbol {
+  position: absolute;
+  right: 8px;
+  color: var(--text-secondary, #666);
+  font-size: 0.85rem;
+  pointer-events: none;
 }
 
 .emp-post-role-amt {

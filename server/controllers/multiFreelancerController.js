@@ -9,14 +9,13 @@ import {
   recomputeSquadTotal,
   serializeSquadBid,
   squadReadyToSubmit,
+  freelancerAlreadyBidOnJob,
 } from '../utils/multiFreelancer.js';
-import { ensureWorkSessionForApplication } from './workspaceController.js';
 import {
-  ensureConversationForApplication,
-  serializeConversation,
-  notifyConversationConnected,
-} from '../utils/messaging.js';
-import { emitConversationCreated } from '../socket/index.js';
+  completeMultiHireIfReady,
+  ensureAcceptedRoleApplication,
+  rejectCompetitorsForRoles,
+} from '../utils/teamHire.js';
 
 const loadUserMap = async (ids) => {
   const unique = [...new Set(ids.map(String).filter(Boolean))];
@@ -28,30 +27,6 @@ const loadUserMap = async (ids) => {
 
 const displayName = (user) =>
   [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || user?.email || 'A freelancer';
-
-async function connectMessaging(application, workspaceId) {
-  const conversationResult = await ensureConversationForApplication(application, workspaceId);
-  const conversation = conversationResult?.conversation || null;
-  if (!conversation) return conversationResult || { conversation: null };
-
-  await emitConversationCreated(conversation, serializeConversation);
-  if (conversationResult.systemMessage) {
-    const { getIO } = await import('../socket/index.js');
-    const io = getIO();
-    if (io) {
-      io.to(`conversation:${conversation._id}`).emit('message:new', conversationResult.systemMessage);
-      const updatePayload = {
-        conversationId: String(conversation._id),
-        lastMessageAt: conversation.lastMessageAt,
-        lastMessagePreview: conversation.lastMessagePreview,
-        unreadBy: conversation.unreadBy,
-      };
-      io.to(`user:${conversation.employerId}`).emit('conversation:updated', updatePayload);
-      io.to(`user:${conversation.freelancerId}`).emit('conversation:updated', updatePayload);
-    }
-  }
-  return conversationResult;
-}
 
 export const searchFreelancers = async (req, res) => {
   try {
@@ -102,8 +77,8 @@ export const createSquadBid = async (req, res) => {
 
     const { name, message = '', estimatedDelivery = '', members = [] } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: 'Squad name is required' });
-    if (!Array.isArray(members) || members.length < 1) {
-      return res.status(400).json({ message: 'Add at least one squad member for an open role' });
+    if (!Array.isArray(members) || members.length < 2) {
+      return res.status(400).json({ message: 'A squad must include at least 2 members covering different roles' });
     }
 
     const roles = job.roles || [];
@@ -131,10 +106,14 @@ export const createSquadBid = async (req, res) => {
         freelancerId,
         roleKey,
         roleName: role.name,
-        splitAmount: Number(m.splitAmount) || role.budgetAmount || 0,
+        splitAmount: role.budgetAmount || 0,
         inviteStatus: m.isLeader || String(freelancerId) === String(req.user._id) ? 'leader' : 'pending',
         respondedAt: m.isLeader || String(freelancerId) === String(req.user._id) ? new Date() : undefined,
       });
+    }
+
+    if (builtMembers.length < 2) {
+      return res.status(400).json({ message: 'A squad must include at least 2 members' });
     }
 
     const leaderEntry = builtMembers.find((m) => String(m.freelancerId) === String(req.user._id));
@@ -143,6 +122,18 @@ export const createSquadBid = async (req, res) => {
     }
     leaderEntry.inviteStatus = 'leader';
     leaderEntry.respondedAt = new Date();
+
+    for (const m of builtMembers) {
+      const prior = await freelancerAlreadyBidOnJob(job._id, m.freelancerId);
+      if (prior.blocked) {
+        const who = String(m.freelancerId) === String(req.user._id) ? 'You' : 'A squad member';
+        return res.status(400).json({
+          message: prior.application
+            ? `${who} already submitted a role bid on this project and cannot join another role or squad.`
+            : `${who} is already on another active squad bid for this project.`,
+        });
+      }
+    }
 
     const existing = await SquadBid.findOne({
       jobPostingId: job._id,
@@ -206,8 +197,22 @@ export const submitSquadBid = async (req, res) => {
     if (squad.status !== 'forming') {
       return res.status(400).json({ message: 'Squad bid already submitted or closed' });
     }
+    if ((squad.members || []).length < 2) {
+      return res.status(400).json({ message: 'A squad must have at least 2 members to submit' });
+    }
     if (!squadReadyToSubmit(squad)) {
       return res.status(400).json({ message: 'All invited members must accept before submitting' });
+    }
+
+    const job = await JobPosting.findById(squad.jobPostingId);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    for (const m of squad.members) {
+      const role = (job.roles || []).find((r) => r.roleKey === m.roleKey);
+      if (!role || role.status === 'filled') {
+        return res.status(400).json({
+          message: `Role "${m.roleName || m.roleKey}" is no longer open. Update the squad before submitting.`,
+        });
+      }
     }
 
     squad.combinedAmount = recomputeSquadTotal(squad);
@@ -219,7 +224,7 @@ export const submitSquadBid = async (req, res) => {
       userId: squad.employerId,
       type: 'squad_bid_received',
       title: 'New squad bid',
-      message: `"${squad.name}" submitted a combined bid for "${squad.jobTitle}".`,
+      message: `"${squad.name}" submitted a combined bid for "${squad.jobTitle}" covering ${squad.members.length} role(s).`,
       link: '/employer/check-status',
       meta: { squadId: squad._id, jobId: squad.jobPostingId },
     });
@@ -248,11 +253,21 @@ export const respondSquadInvite = async (req, res) => {
       return res.status(400).json({ message: 'Invite already responded to' });
     }
 
+    if (accept) {
+      const prior = await freelancerAlreadyBidOnJob(squad.jobPostingId, req.user._id, {
+        exceptSquadId: squad._id,
+      });
+      if (prior.blocked) {
+        return res.status(400).json({
+          message: prior.application
+            ? 'You already bid on another role for this project. Decline this squad invite or withdraw that bid first.'
+            : 'You are already on another squad for this project.',
+        });
+      }
+    }
+
     member.inviteStatus = accept ? 'accepted' : 'declined';
     member.respondedAt = new Date();
-    if (typeof req.body.splitAmount === 'number') {
-      member.splitAmount = req.body.splitAmount;
-    }
 
     if (!accept) {
       squad.status = 'withdrawn';
@@ -359,83 +374,75 @@ export const acceptSquadBid = async (req, res) => {
     if (squad.status !== 'submitted') {
       return res.status(400).json({ message: 'Only submitted squad bids can be accepted' });
     }
+    if ((squad.members || []).length < 2) {
+      return res.status(400).json({ message: 'Squad must have at least 2 members' });
+    }
 
     const job = await JobPosting.findById(squad.jobPostingId);
     if (!job) return res.status(404).json({ message: 'Job not found' });
 
-    const workspaces = [];
     for (const member of squad.members) {
-      let application = await JobApplication.findOne({
-        jobPostingId: job._id,
+      const role = (job.roles || []).find((r) => r.roleKey === member.roleKey);
+      if (!role) {
+        return res.status(400).json({ message: `Role "${member.roleName}" no longer exists` });
+      }
+      if (role.status === 'filled') {
+        return res.status(400).json({
+          message: `Role "${role.name}" is already filled. You can only accept squads for open roles.`,
+        });
+      }
+    }
+
+    const acceptedApps = [];
+    for (const member of squad.members) {
+      const application = await ensureAcceptedRoleApplication({
+        job,
         freelancerId: member.freelancerId,
         roleKey: member.roleKey,
+        roleName: member.roleName,
+        amount: member.splitAmount,
+        message: squad.message,
+        estimatedDelivery: squad.estimatedDelivery,
       });
-
-      if (!application) {
-        application = await JobApplication.create({
-          jobPostingId: job._id,
-          freelancerId: member.freelancerId,
-          employerId: job.employerId,
-          jobTitle: job.title,
-          organizationName: job.organizationName,
-          status: 'accepted',
-          bidType: 'role',
-          roleKey: member.roleKey,
-          roleName: member.roleName,
-          amount: member.splitAmount,
-          message: squad.message,
-          estimatedDelivery: squad.estimatedDelivery,
-          reviewedAt: new Date(),
-        });
-      } else {
-        application.status = 'accepted';
-        application.amount = member.splitAmount;
-        application.reviewedAt = new Date();
-        await application.save();
-      }
-
-      const role = (job.roles || []).find((r) => r.roleKey === member.roleKey);
-      if (role) {
-        role.status = 'filled';
-        role.filledByApplicationId = application._id;
-      }
-
-      const session = await ensureWorkSessionForApplication(application, job);
-      workspaces.push({ freelancerId: member.freelancerId, workspaceId: session?._id });
-      const conversationResult = await connectMessaging(application, session?._id);
+      acceptedApps.push(application);
 
       await notifyUser({
         userId: member.freelancerId,
         type: 'bid_accepted',
         title: 'Squad bid accepted',
         message: `${job.organizationName} accepted squad "${squad.name}" for "${job.title}". Your role: ${member.roleName}.`,
-        link: session?._id ? `/dashboard/workspace/${session._id}` : '/dashboard',
-        meta: { squadId: squad._id, jobId: job._id, applicationId: application._id },
+        link: '/dashboard',
+        meta: { squadId: squad._id, jobId: job._id, applicationId: application._id, roleKey: member.roleKey },
       });
-      await notifyConversationConnected(application, conversationResult);
     }
 
-    job.status = 'filled';
-    await job.save();
+    await rejectCompetitorsForRoles(
+      job._id,
+      squad.members.map((m) => m.roleKey),
+      { exceptApplicationIds: acceptedApps.map((a) => a._id), exceptSquadId: squad._id },
+    );
 
     squad.status = 'accepted';
     squad.reviewedAt = new Date();
     await squad.save();
+    await job.save();
 
-    await JobApplication.updateMany(
-      { jobPostingId: job._id, status: 'pending' },
-      { status: 'rejected', reviewedAt: new Date() },
-    );
-    await SquadBid.updateMany(
-      {
-        jobPostingId: job._id,
-        _id: { $ne: squad._id },
-        status: { $in: ['forming', 'submitted'] },
-      },
-      { status: 'rejected', reviewedAt: new Date() },
-    );
+    const completion = await completeMultiHireIfReady(job);
+    const filled = allRolesFilled(job);
+    const openRoles = (job.roles || []).filter((r) => r.status !== 'filled').map((r) => r.name);
 
-    res.json({ message: 'Squad accepted - all roles filled', workspaces });
+    res.json({
+      message: filled
+        ? 'Squad accepted — all roles filled. Shared workspace and group chats are ready.'
+        : `Squad accepted — ${squad.members.length} role(s) filled. Remaining open: ${openRoles.join(', ') || 'none'}.`,
+      rolesFilled: (job.roles || []).filter((r) => r.status === 'filled').length,
+      rolesTotal: (job.roles || []).length,
+      jobFilled: filled,
+      openRoles,
+      teamWorkspaceId: completion?.team?._id || null,
+      freelancerGroupId: completion?.freelancerGroupId || null,
+      projectGroupId: completion?.projectGroupId || null,
+    });
   } catch (err) {
     console.error('Accept squad bid error:', err);
     res.status(500).json({ message: 'Failed to accept squad bid' });
@@ -505,57 +512,56 @@ export const acceptRoleApplication = async (req, res) => {
     role.status = 'filled';
     role.filledByApplicationId = application._id;
 
-    await JobApplication.updateMany(
-      {
-        jobPostingId: job._id,
-        roleKey: application.roleKey,
-        _id: { $ne: application._id },
-        status: 'pending',
-      },
-      { status: 'rejected', reviewedAt: new Date() },
-    );
+    await rejectCompetitorsForRoles(job._id, [application.roleKey], {
+      exceptApplicationIds: [application._id],
+    });
 
-    const session = await ensureWorkSessionForApplication(application, job);
-    const conversationResult = await connectMessaging(application, session?._id);
-
-    const filled = allRolesFilled(job);
-    if (filled) {
-      job.status = 'filled';
-      await JobApplication.updateMany(
-        { jobPostingId: job._id, status: 'pending' },
-        { status: 'rejected', reviewedAt: new Date() },
-      );
-      await SquadBid.updateMany(
-        { jobPostingId: job._id, status: { $in: ['forming', 'submitted'] } },
-        { status: 'rejected', reviewedAt: new Date() },
-      );
-    }
     await job.save();
 
     application.jobTitle = application.jobTitle || job.title;
     application.organizationName = application.organizationName || job.organizationName;
 
+    const completion = await completeMultiHireIfReady(job);
+    const filled = allRolesFilled(job);
+    const openRoles = (job.roles || []).filter((r) => r.status !== 'filled').map((r) => ({
+      roleKey: r.roleKey,
+      name: r.name,
+    }));
+
     await notifyUser({
       userId: application.freelancerId,
       type: 'bid_accepted',
       title: 'Role bid accepted',
-      message: `${job.organizationName} selected you for "${application.roleName || role.name}" on "${job.title}".`,
-      link: session?._id ? `/dashboard/workspace/${session._id}` : '/dashboard',
+      message: filled
+        ? `${job.organizationName} selected you for "${application.roleName || role.name}" on "${job.title}". All roles are filled — shared workspace is ready.`
+        : `${job.organizationName} selected you for "${application.roleName || role.name}" on "${job.title}". Waiting for remaining roles to be filled.`,
+      link: completion?.team?._id
+        ? `/dashboard/team-workspace/${completion.team._id}`
+        : '/dashboard',
       meta: {
-        workspaceId: session?._id,
+        teamWorkspaceId: completion?.team?._id,
         jobId: job._id,
         applicationId: application._id,
         roleKey: application.roleKey,
       },
     });
-    await notifyConversationConnected(application, conversationResult);
 
     res.json({
-      message: filled ? 'Role filled - all roles complete, job filled' : 'Role filled',
-      application: { id: application._id, status: 'accepted', workspaceId: session?._id },
+      message: filled
+        ? 'Role filled — all roles complete. Shared workspace and group chats are ready.'
+        : `Role filled. Remaining open roles: ${openRoles.map((r) => r.name).join(', ') || 'none'}.`,
+      application: {
+        id: application._id,
+        status: 'accepted',
+        roleKey: application.roleKey,
+        teamWorkspaceId: completion?.team?._id || null,
+      },
       jobFilled: filled,
       rolesFilled: (job.roles || []).filter((r) => r.status === 'filled').length,
       rolesTotal: (job.roles || []).length,
+      openRoles,
+      freelancerGroupId: completion?.freelancerGroupId || null,
+      projectGroupId: completion?.projectGroupId || null,
     });
   } catch (err) {
     console.error('Accept role application error:', err);

@@ -58,7 +58,7 @@
   color: var(--dt-text-muted);
 }
 
-.dam-card--blue { --dam-glow: rgba(0, 113, 227, 0.12); }
+.dam-card--blue { --dam-glow: rgba(50, 109, 92, 0.12); }
 .dam-card--green { --dam-glow: rgba(52, 199, 89, 0.12); }
 .dam-card--purple { --dam-glow: rgba(191, 90, 242, 0.12); }
 .dam-card--orange { --dam-glow: rgba(255, 149, 0, 0.12); }

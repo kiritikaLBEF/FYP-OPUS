@@ -27,6 +27,7 @@ export const updateProfile = async (req, res) => {
       degree, degreeName, schoolName, passoutYear, stillRunning,
       interests, bio, careerObjectives, professionalSummary, skills,
       notificationPreferences, privacySettings, language,
+      organizationName, website, socialHandle, publicEmail, businessType, businessTypeOther,
     } = req.body;
 
     if (firstName !== undefined) user.firstName = firstName.trim();
@@ -70,6 +71,35 @@ export const updateProfile = async (req, res) => {
     if (professionalSummary !== undefined) user.professionalSummary = String(professionalSummary).slice(0, 2000);
     if (skills !== undefined) {
       user.skills = [...new Set((Array.isArray(skills) ? skills : []).map((s) => String(s).trim()).filter(Boolean))];
+    }
+
+    if (user.role === 'employer') {
+      if (organizationName !== undefined) {
+        user.organizationName = String(organizationName || '').trim().slice(0, 120);
+      }
+      if (website !== undefined) {
+        user.website = String(website || '').trim().slice(0, 200);
+      }
+      if (socialHandle !== undefined) {
+        user.socialHandle = String(socialHandle || '').trim().slice(0, 80);
+      }
+      if (publicEmail !== undefined) {
+        const next = String(publicEmail || '').trim().toLowerCase().slice(0, 120);
+        if (next && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+          return res.status(400).json({ message: 'Enter a valid public contact email' });
+        }
+        user.publicEmail = next;
+      }
+      if (businessType !== undefined) {
+        const allowed = ['', 'it', 'government', 'ngo_ingo', 'marketing', 'consulting', 'other'];
+        if (!allowed.includes(businessType)) {
+          return res.status(400).json({ message: 'Invalid business type' });
+        }
+        user.businessType = businessType;
+        user.businessTypeOther = businessType === 'other'
+          ? String(businessTypeOther || '').trim().slice(0, 80)
+          : '';
+      }
     }
 
     if (notificationPreferences) {

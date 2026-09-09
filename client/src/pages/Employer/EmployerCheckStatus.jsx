@@ -171,6 +171,10 @@ function AssignedWorkerRow({ freelancer, actionCount, onCheckStatus, preview = f
   if (!freelancer) return null;
   const avatar = freelancer.profilePicture ? getProfileUrl(freelancer.profilePicture) : '';
   const name = `${freelancer.firstName || ''} ${freelancer.lastName || ''}`.trim() || 'Freelancer';
+  const subtitle = freelancer.roleName
+    || freelancer.headline
+    || freelancer.freelancerId
+    || 'Assigned freelancer';
 
   return (
     <div className={`ecs-assigned${preview ? ' ecs-assigned--preview' : ''}`}>
@@ -180,18 +184,18 @@ function AssignedWorkerRow({ freelancer, actionCount, onCheckStatus, preview = f
         </div>
         <div>
           <strong>{name}</strong>
-          <p>{freelancer.headline || freelancer.freelancerId || 'Assigned freelancer'}</p>
+          <p>{subtitle}</p>
         </div>
       </div>
       {!preview && (
         completed ? (
           <span className="emp-completed-badge">Completed</span>
-        ) : (
+        ) : onCheckStatus ? (
           <button type="button" className="ecs-check-status-btn" onClick={onCheckStatus}>
             Check Status
             {actionCount > 0 && <span className="ecs-check-status-btn__badge">{actionCount > 9 ? '9+' : actionCount}</span>}
           </button>
-        )
+        ) : null
       )}
     </div>
   );
@@ -223,22 +227,40 @@ function JobCard({
   const statusPill = () => {
     if (item.phase === 'completed') return { label: 'Completed', tone: 'completed' };
     if (!isPending) return { label: 'In Progress', tone: 'progress' };
+    if (item.isMulti && (item.rolesFilled || 0) > 0 && (item.rolesFilled || 0) < (item.rolesTotal || 0)) {
+      return {
+        label: `Hiring ${item.rolesFilled}/${item.rolesTotal} roles`,
+        tone: 'bids',
+      };
+    }
     if (bidCount > 0) return { label: `${bidCount} Bid${bidCount === 1 ? '' : 's'} Received`, tone: 'bids' };
     return { label: 'No bids yet', tone: 'empty' };
   };
 
   const pill = statusPill();
   const catIcon = CATEGORY_ICONS[item.category] || 'Jb';
+  const notifyCount = isPending
+    ? bidCount
+    : (item.actionRequiredCount || 0);
+  const hasNotify = notifyCount > 0;
 
   return (
-    <article className={`ecs-job-card ${expanded ? 'is-expanded' : ''}`}>
+    <article className={`ecs-job-card ${expanded ? 'is-expanded' : ''}${hasNotify ? ' has-notify' : ''}`}>
       <button type="button" className="ecs-job-card__header" onClick={onToggle}>
-        <div className="ecs-job-card__icon" aria-hidden="true">{catIcon}</div>
+        <div className="ecs-job-card__icon" aria-hidden="true">
+          {catIcon}
+          {hasNotify && <span className="ecs-job-card__icon-dot" aria-hidden="true" />}
+        </div>
         <div className="ecs-job-card__info">
           <div className="ecs-job-card__title-row">
             <h3>{item.title}</h3>
             {item.isMulti && <span className="ecs-job-card__multi">Multi</span>}
             <span className="ecs-job-card__category">{categoryLabel(item.category)}</span>
+            {hasNotify && (
+              <span className="ecs-job-card__notify" title={isPending ? 'New bids' : 'Needs your attention'}>
+                {notifyCount > 9 ? '9+' : notifyCount}
+              </span>
+            )}
           </div>
           <div className="ecs-job-card__meta">
             <span>Posted {fmtDate(item.postedAt)}</span>
@@ -248,7 +270,27 @@ function JobCard({
           {item.description && <p className="ecs-job-card__desc">{item.description}</p>}
         </div>
 
-        {!isPending && item.assignedFreelancer && (
+        {!isPending && item.isMulti && (item.assignedTeam || []).length > 0 && (
+          <div className="ecs-job-card__assigned-preview ecs-job-card__assigned-preview--team" onClick={(e) => e.stopPropagation()} role="presentation">
+            <div className="ecs-team-avatars">
+              {(item.assignedTeam || []).slice(0, 3).map((m) => {
+                const pic = m.profilePicture ? getProfileUrl(m.profilePicture) : '';
+                const initial = `${m.firstName || ''}${m.lastName || ''}`.trim().charAt(0) || '?';
+                return (
+                  <span key={`${m.id}-${m.roleKey}`} className="ecs-team-avatars__item" title={`${m.firstName} ${m.lastName} · ${m.roleName}`}>
+                    {pic ? <img src={pic} alt="" /> : initial}
+                  </span>
+                );
+              })}
+              {(item.assignedTeam || []).length > 3 && (
+                <span className="ecs-team-avatars__more">+{(item.assignedTeam || []).length - 3}</span>
+              )}
+            </div>
+            <span className="ecs-team-avatars__label">{(item.assignedTeam || []).length} freelancers</span>
+          </div>
+        )}
+
+        {!isPending && !item.isMulti && item.assignedFreelancer && (
           <div className="ecs-job-card__assigned-preview" onClick={(e) => e.stopPropagation()} role="presentation">
             <AssignedWorkerRow freelancer={item.assignedFreelancer} preview />
           </div>
@@ -276,54 +318,90 @@ function JobCard({
                 <>
                   <div className="ecs-multi-progress">
                     Roles filled: {jobMeta.rolesFilled || 0} of {jobMeta.rolesTotal || 0}
+                    {jobMeta.teamWorkspaceId && (
+                      <a className="ecs-team-ws-link" href={`/employer/team-workspace/${jobMeta.teamWorkspaceId}`}>
+                        Open shared workspace
+                      </a>
+                    )}
                   </div>
                   <div className="emp-review-tabs">
                     <button type="button" className={reviewMode === 'role' ? 'is-active' : ''} onClick={() => setReviewMode('role')}>Role-based bidding</button>
                     <button type="button" className={reviewMode === 'squad' ? 'is-active' : ''} onClick={() => setReviewMode('squad')}>Squad bidding</button>
                   </div>
                   {reviewMode === 'role' ? (
-                    roles.map((role) => (
-                      <div key={role.roleKey} className="ecs-role-block">
-                        <div className="ecs-role-block__head">
-                          <strong>{role.name}</strong>
-                          <span>{role.bidCount || 0} bids · {fmtMoney(role.budgetAmount)}</span>
+                    roles.map((role) => {
+                      const filled = role.status === 'filled';
+                      const accepted = (role.applications || []).find((a) => a.status === 'accepted');
+                      return (
+                        <div key={role.roleKey} className="ecs-role-block">
+                          <div className="ecs-role-block__head">
+                            <strong>{role.name}</strong>
+                            <span>
+                              {filled ? 'Filled' : `${role.bidCount || 0} bids`} · {fmtMoney(role.budgetAmount)}
+                            </span>
+                          </div>
+                          {filled ? (
+                            <p className="ecs-muted">
+                              Filled{accepted?.freelancer ? ` by ${[accepted.freelancer.firstName, accepted.freelancer.lastName].filter(Boolean).join(' ')}` : ''}. No more bids can be accepted for this role.
+                            </p>
+                          ) : (role.applications || []).filter((a) => a.status === 'pending').length === 0 ? (
+                            <p className="ecs-muted">No bids yet for this open role.</p>
+                          ) : (
+                            <BidTable
+                              apps={(role.applications || []).filter((a) => a.status === 'pending')}
+                              actionLoading={actionLoading}
+                              onViewProfile={onViewProfile}
+                              onAccept={onAccept}
+                              onReject={onReject}
+                            />
+                          )}
                         </div>
-                        {(role.applications || []).filter((a) => a.status === 'pending').length === 0 ? (
-                          <p className="ecs-muted">No bids yet for this role.</p>
-                        ) : (
-                          <BidTable
-                            apps={(role.applications || []).filter((a) => a.status === 'pending')}
-                            actionLoading={actionLoading}
-                            onViewProfile={onViewProfile}
-                            onAccept={onAccept}
-                            onReject={onReject}
-                          />
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   ) : squads.length === 0 ? (
                     <p className="ecs-muted">No submitted squad bids yet.</p>
                   ) : (
-                    squads.map((sq) => (
-                      <div key={sq.id} className="emp-squad-card">
-                        <div className="emp-squad-card__top">
-                          <div>
-                            <strong>{sq.name}</strong>
-                            <p>{(sq.members || []).length} members</p>
+                    squads.map((sq) => {
+                      const coversFilled = (sq.members || []).some((m) => {
+                        const role = roles.find((r) => r.roleKey === m.roleKey);
+                        return role?.status === 'filled';
+                      });
+                      return (
+                        <div key={sq.id} className="emp-squad-card">
+                          <div className="emp-squad-card__top">
+                            <div>
+                              <strong>{sq.name}</strong>
+                              <p>{(sq.members || []).length} members · covers {(sq.members || []).map((m) => m.roleName || m.roleKey).join(', ')}</p>
+                            </div>
+                            <div className="emp-squad-card__price">
+                              <em>{fmtMoney(sq.combinedAmount)}</em>
+                              <span>{sq.status}</span>
+                            </div>
                           </div>
-                          <div className="emp-squad-card__price">
-                            <em>{fmtMoney(sq.combinedAmount)}</em>
-                            <span>{sq.status}</span>
-                          </div>
+                          <ul className="emp-squad-card__members">
+                            {(sq.members || []).map((m) => (
+                              <li key={`${m.freelancerId}-${m.roleKey}`}>
+                                {m.freelancer?.firstName || m.freelancer?.name || 'Member'} · {m.roleName}
+                              </li>
+                            ))}
+                          </ul>
+                          {sq.status === 'submitted' && (
+                            <div className="emp-squad-card__actions">
+                              <button
+                                type="button"
+                                className="emp-btn emp-btn--primary"
+                                disabled={!!actionLoading || coversFilled}
+                                title={coversFilled ? 'One or more of these roles are already filled' : 'Accept this squad for its roles'}
+                                onClick={() => onSquadReview(sq.id, 'accept')}
+                              >
+                                Accept squad
+                              </button>
+                              <button type="button" className="emp-btn emp-btn--danger" disabled={!!actionLoading} onClick={() => onSquadReview(sq.id, 'reject')}>Reject</button>
+                            </div>
+                          )}
                         </div>
-                        {sq.status === 'submitted' && (
-                          <div className="emp-squad-card__actions">
-                            <button type="button" className="emp-btn emp-btn--primary" disabled={!!actionLoading} onClick={() => onSquadReview(sq.id, 'accept')}>Accept squad</button>
-                            <button type="button" className="emp-btn emp-btn--danger" disabled={!!actionLoading} onClick={() => onSquadReview(sq.id, 'reject')}>Reject</button>
-                          </div>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </>
               ) : pendingApps.length === 0 ? (
@@ -340,7 +418,51 @@ function JobCard({
             </>
           ) : (
             <>
-              {item.assignedFreelancer ? (
+              {item.isMulti ? (
+                <div className="ecs-team-progress">
+                  <div className="ecs-bids-head">
+                    <span className="ecs-bids-head__label">
+                      Team · {(item.assignedTeam || []).length || item.rolesFilled || 0} of {item.rolesTotal || 0} roles
+                    </span>
+                    {item.teamWorkspaceId && (
+                      <button
+                        type="button"
+                        className="emp-btn emp-btn--primary ecs-team-ws-btn"
+                        onClick={() => navigate(`/employer/team-workspace/${item.teamWorkspaceId}`)}
+                      >
+                        Open shared workspace
+                        {(item.actionRequiredCount || 0) > 0 && (
+                          <span className="ecs-check-status-btn__badge">
+                            {item.actionRequiredCount > 9 ? '9+' : item.actionRequiredCount}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  {(item.assignedTeam || []).length === 0 ? (
+                    <p className="ecs-muted">Team members will appear here once all roles are filled.</p>
+                  ) : (
+                    <ul className="ecs-team-list">
+                      {(item.assignedTeam || []).map((m) => (
+                        <li key={`${m.id}-${m.roleKey}`} className="ecs-team-list__row">
+                          <AssignedWorkerRow
+                            freelancer={m}
+                            actionCount={item.actionRequiredCount || 0}
+                            completed={['certified', 'paid'].includes(m.roleStatus)}
+                            onCheckStatus={item.teamWorkspaceId
+                              ? () => navigate(`/employer/team-workspace/${item.teamWorkspaceId}`)
+                              : undefined}
+                          />
+                          <span className="ecs-team-list__role">{m.roleName || 'Role'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {item.workspaceStatus && item.workspaceStatus !== 'certified' && (
+                    <p className="ecs-muted">Shared workspace: {String(item.workspaceStatus).replace(/_/g, ' ')}</p>
+                  )}
+                </div>
+              ) : item.assignedFreelancer ? (
                 <AssignedWorkerRow
                   freelancer={item.assignedFreelancer}
                   actionCount={item.actionRequiredCount || 0}
@@ -350,7 +472,7 @@ function JobCard({
               ) : (
                 <p className="ecs-muted">Freelancer assignment pending.</p>
               )}
-              {item.workspaceStatus && item.workspaceStatus !== 'certified' && (
+              {!item.isMulti && item.workspaceStatus && item.workspaceStatus !== 'certified' && (
                 <p className="ecs-muted">Workspace status: {String(item.workspaceStatus).replace(/_/g, ' ')}</p>
               )}
             </>

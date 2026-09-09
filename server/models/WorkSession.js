@@ -140,9 +140,7 @@ const workSessionSchema = new mongoose.Schema(
       default: 'not_started',
       index: true,
     },
-    /** Employer must unlock this before the freelancer can submit final delivery. */
     finalizationUnlocked: { type: Boolean, default: false },
-    /** Last time employer emailed the freelancer a reminder to start work. */
     startReminderSentAt: { type: Date },
     guidelines: [guidelineSchema],
     progressUpdates: [progressUpdateSchema],
@@ -159,7 +157,6 @@ const workSessionSchema = new mongoose.Schema(
     paidAt: { type: Date },
     certifiedAt: { type: Date },
 
-    /** @deprecated legacy fields kept only for one-time migration */
     conditions: [{ type: String, trim: true }],
     drafts: [{
       number: Number,

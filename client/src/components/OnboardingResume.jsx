@@ -12,22 +12,24 @@ const ACTIVE_ONBOARDING_STEPS = new Set([
 ]);
 
 export default function OnboardingResume() {
-  const { isOnboarding, onboardingStep, loading, pendingEmail } = useAuth();
+  const { isOnboarding, onboardingStep, loading, pendingEmail, user, setPendingEmail } = useAuth();
   const { modal, openOnboarding, openOtp } = useAuthModal();
 
   useEffect(() => {
     if (loading || modal) return;
     if (!isOnboarding) return;
 
-    if (onboardingStep === 'otp' && pendingEmail) {
-      openOtp();
+    if (onboardingStep === 'otp') {
+      const email = pendingEmail || user?.email || '';
+      if (email && !pendingEmail) setPendingEmail(email);
+      if (email) openOtp();
       return;
     }
 
     if (onboardingStep && ACTIVE_ONBOARDING_STEPS.has(onboardingStep)) {
       openOnboarding();
     }
-  }, [loading, isOnboarding, onboardingStep, pendingEmail, modal, openOnboarding, openOtp]);
+  }, [loading, isOnboarding, onboardingStep, pendingEmail, user, modal, openOnboarding, openOtp, setPendingEmail]);
 
   return null;
 }

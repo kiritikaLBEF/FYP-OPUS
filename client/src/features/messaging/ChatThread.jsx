@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import MessageComposer from './MessageComposer';
 import { getProfileUrl } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const fmtTime = (d) =>
   new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -64,6 +66,7 @@ export default function ChatThread({
   const [menuId, setMenuId] = useState(null);
   const [infoId, setInfoId] = useState(null);
   const prevConvId = useRef(null);
+  const { isEmployer } = useAuth();
 
   useEffect(() => {
     const el = bodyRef.current;
@@ -98,15 +101,39 @@ export default function ChatThread({
     );
   }
 
+  const peerIsEmployer = conversation.peer?.role === 'employer';
+  const isGroup = conversation.kind === 'group';
+  const peerProfilePath = !isGroup && peerIsEmployer && conversation.peer?.id
+    ? `/employers/${conversation.peer.id}`
+    : null;
+  const headerName = isGroup
+    ? (conversation.title || conversation.jobTitle || 'Group chat')
+    : (conversation.peer?.name || 'Chat');
+  const headerSub = isGroup
+    ? `${conversation.groupType === 'freelancer_team' ? 'Freelancer-only group' : 'Project group'} · ${conversation.memberCount || conversation.members?.length || 0} members`
+    : `${conversation.jobTitle || 'Conversation'}${conversation.collaborationCount > 1 ? ` · Together ${conversation.collaborationCount}×` : ''}${archivedView ? ' · Archived' : ''}`;
+
   return (
     <div className={`msg-thread ${compact ? 'msg-thread--compact' : ''}`}>
       <header className="msg-thread__head">
         <div>
-          <strong>{conversation.peer?.name || 'Chat'}</strong>
+          {peerProfilePath ? (
+            <Link
+              className="msg-thread__peer-link"
+              to={peerProfilePath}
+              state={{
+                from: isEmployer ? '/employer/messages' : '/messages',
+                fromLabel: 'Back to messages',
+              }}
+            >
+              <strong>{headerName}</strong>
+            </Link>
+          ) : (
+            <strong>{headerName}</strong>
+          )}
           <span>
-            {conversation.jobTitle || 'Conversation'}
-            {conversation.collaborationCount > 1 ? ` · Together ${conversation.collaborationCount}×` : ''}
-            {archivedView ? ' · Archived' : ''}
+            {headerSub}
+            {!isGroup && archivedView ? ' · Archived' : ''}
           </span>
         </div>
         <div className="msg-thread__actions">

@@ -37,7 +37,7 @@
 }
 
 .home-ad__image--empty {
-  background: linear-gradient(135deg, rgba(0, 113, 227, 0.18), var(--bg-tertiary, #f5f5f7));
+  background: linear-gradient(135deg, rgba(50, 109, 92, 0.18), var(--bg-tertiary, #f5f5f7));
 }
 
 .home-ad__body {
@@ -61,7 +61,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent-blue, #0071e3);
+  color: var(--accent-blue, #326d5c);
 }
 
 .home-ad__title {
@@ -121,7 +121,7 @@
 }
 
 .home-ad__dot--on {
-  background: var(--accent-blue, #0071e3);
+  background: var(--accent-blue, #326d5c);
 }
 
 .home-ad--anim-fade .home-ad__image {

@@ -17,7 +17,8 @@ import {
   notifyConversationConnected,
 } from '../utils/messaging.js';
 import { emitConversationCreated } from '../socket/index.js';
-import { normalizeRolesInput, rolesBudgetOk, serializeSquadBid } from '../utils/multiFreelancer.js';
+import { normalizeRolesInput, rolesBudgetOk, serializeSquadBid, allRolesFilled } from '../utils/multiFreelancer.js';
+import TeamWorkspace from '../models/TeamWorkspace.js';
 import { serializePublicFreelancer } from '../utils/publicFreelancer.js';
 import { loadBadgesForUsers } from '../utils/badges.js';
 import {
@@ -475,13 +476,45 @@ export const getJobStatus = async (req, res) => {
     }).sort({ postedAt: -1 }).lean();
 
     const jobIds = jobs.map((j) => j._id);
+    const jobById = Object.fromEntries(jobs.map((j) => [String(j._id), j]));
+
+    for (const j of jobs) {
+      if ((j.projectMode || 'single') !== 'multi') continue;
+      if (allRolesFilled(j)) continue;
+
+      if (j.status === 'filled') {
+        j.status = 'open';
+        await JobPosting.updateOne({ _id: j._id }, { status: 'open' });
+      }
+
+      const openRoleKeys = (j.roles || [])
+        .filter((r) => r.status !== 'filled')
+        .map((r) => r.roleKey);
+      if (openRoleKeys.length) {
+        await JobApplication.updateMany(
+          {
+            jobPostingId: j._id,
+            status: 'rejected',
+            bidType: 'role',
+            roleKey: { $in: openRoleKeys },
+          },
+          { status: 'pending', reviewedAt: null },
+        );
+      }
+    }
+
     const acceptedApps = await JobApplication.find({
       jobPostingId: { $in: jobIds },
       status: 'accepted',
     }).lean();
-    await Promise.all(acceptedApps.map((a) => ensureWorkSessionForApplication(a)));
 
-    const [pendingCounts, acceptedCounts, sessions, pendingApps, squadCounts] = await Promise.all([
+    const singleAccepted = acceptedApps.filter((a) => {
+      const job = jobById[String(a.jobPostingId)];
+      return (job?.projectMode || 'single') !== 'multi';
+    });
+    await Promise.all(singleAccepted.map((a) => ensureWorkSessionForApplication(a)));
+
+    const [pendingCounts, acceptedCounts, sessions, pendingApps, squadCounts, teamWorkspaces] = await Promise.all([
       JobApplication.aggregate([
         { $match: { jobPostingId: { $in: jobIds }, status: 'pending' } },
         { $group: { _id: '$jobPostingId', count: { $sum: 1 } } },
@@ -499,26 +532,56 @@ export const getJobStatus = async (req, res) => {
         { $match: { jobPostingId: { $in: jobIds }, status: 'submitted' } },
         { $group: { _id: '$jobPostingId', count: { $sum: 1 } } },
       ]),
+      TeamWorkspace.find({ employerId: req.user._id, jobPostingId: { $in: jobIds } }).lean(),
     ]);
     const countMap = Object.fromEntries(pendingCounts.map((c) => [String(c._id), c.count]));
     const squadCountMap = Object.fromEntries(squadCounts.map((c) => [String(c._id), c.count]));
     const acceptedMap = Object.fromEntries(acceptedCounts.map((c) => [String(c._id), c.count]));
     const sessionByJob = Object.fromEntries(sessions.map((s) => [String(s.jobPostingId), s]));
+    const teamByJob = Object.fromEntries(teamWorkspaces.map((t) => [String(t.jobPostingId), t]));
 
     const assignedFreelancerByJob = {};
+    const teamMembersByJob = {};
     for (const ws of sessions) {
+      const job = jobById[String(ws.jobPostingId)];
+      if ((job?.projectMode || 'single') === 'multi') continue;
       if (!['paid', 'certified'].includes(ws.status)) {
         assignedFreelancerByJob[String(ws.jobPostingId)] = String(ws.freelancerId);
       }
     }
     for (const app of acceptedApps) {
+      const job = jobById[String(app.jobPostingId)];
       const jid = String(app.jobPostingId);
+      if ((job?.projectMode || 'single') === 'multi') {
+        if (!teamMembersByJob[jid]) teamMembersByJob[jid] = [];
+        teamMembersByJob[jid].push({
+          freelancerId: String(app.freelancerId),
+          roleKey: app.roleKey || '',
+          roleName: app.roleName || '',
+          applicationId: String(app._id),
+        });
+        continue;
+      }
       if (!assignedFreelancerByJob[jid]) {
         assignedFreelancerByJob[jid] = String(app.freelancerId);
       }
     }
+    for (const team of teamWorkspaces) {
+      const jid = String(team.jobPostingId);
+      if (!(team.members || []).length) continue;
+      teamMembersByJob[jid] = team.members.map((m) => ({
+        freelancerId: String(m.freelancerId),
+        roleKey: m.roleKey || '',
+        roleName: m.roleName || '',
+        roleStatus: m.roleStatus || 'not_started',
+        applicationId: m.applicationId ? String(m.applicationId) : '',
+      }));
+    }
 
-    const assignedIds = [...new Set(Object.values(assignedFreelancerByJob))];
+    const assignedIds = [...new Set([
+      ...Object.values(assignedFreelancerByJob),
+      ...Object.values(teamMembersByJob).flatMap((rows) => rows.map((r) => r.freelancerId)),
+    ])];
     const assignedUsers = assignedIds.length
       ? await User.find({ _id: { $in: assignedIds } })
         .select('firstName lastName profilePicture freelancerId professionalSummary degree degreeName')
@@ -528,10 +591,22 @@ export const getJobStatus = async (req, res) => {
 
     const actionCountByJob = {};
     for (const ws of sessions) {
-      if (['final_submitted', 'awaiting_payment'].includes(ws.status)) {
-        const jid = String(ws.jobPostingId);
-        actionCountByJob[jid] = (actionCountByJob[jid] || 0) + 1;
-      }
+      const jid = String(ws.jobPostingId);
+      let n = 0;
+      if (['final_submitted', 'awaiting_payment'].includes(ws.status)) n += 1;
+      n += (ws.progressUpdates || []).filter((u) => (u.reviewStatus || 'pending') === 'pending').length;
+      if (n) actionCountByJob[jid] = (actionCountByJob[jid] || 0) + n;
+    }
+    for (const team of teamWorkspaces) {
+      const jid = String(team.jobPostingId);
+      let n = 0;
+      if (team.status === 'awaiting_payment') n += 1;
+      n += (team.progressUpdates || []).filter((u) => {
+        if ((u.reviewStatus || 'pending') !== 'pending') return false;
+        const member = (team.members || []).find((m) => m.roleKey === u.roleKey);
+        return member && !['role_finalized', 'paid', 'certified'].includes(member.roleStatus);
+      }).length;
+      if (n) actionCountByJob[jid] = (actionCountByJob[jid] || 0) + n;
     }
 
     const bidderIds = [...new Set(pendingApps.map((a) => String(a.freelancerId)))];
@@ -560,10 +635,17 @@ export const getJobStatus = async (req, res) => {
       });
     }
 
-    const resolvePhase = (j, ws, hasAcceptedApplicant) => {
+    const resolvePhase = (j, ws, team) => {
       if (j.publishStatus === 'draft') return 'draft';
+      const isMulti = (j.projectMode || 'single') === 'multi';
+      if (isMulti) {
+        const fullyHired = allRolesFilled(j) || !!team;
+        if (!fullyHired) return 'pending';
+        if (team && ['paid', 'certified'].includes(team.status)) return 'completed';
+        return 'in_progress';
+      }
       if (ws && ['paid', 'certified'].includes(ws.status)) return 'completed';
-      if (hasAcceptedApplicant || ws || j.status === 'filled') return 'in_progress';
+      if ((acceptedMap[String(j._id)] || 0) > 0 || ws || j.status === 'filled') return 'in_progress';
       return 'pending';
     };
 
@@ -571,20 +653,47 @@ export const getJobStatus = async (req, res) => {
     let progressActionTotal = 0;
 
     const items = jobs.map((j) => {
-        const hasAcceptedApplicant = (acceptedMap[String(j._id)] || 0) > 0 || j.status === 'filled';
-        const ws = sessionByJob[String(j._id)];
+        const isMulti = (j.projectMode || 'single') === 'multi';
+        const rolesFilled = (j.roles || []).filter((r) => r.status === 'filled').length;
+        const rolesTotal = (j.roles || []).length;
+        const multiComplete = isMulti && (allRolesFilled(j) || !!teamByJob[String(j._id)]);
+        const hasAcceptedApplicant = isMulti
+          ? multiComplete
+          : ((acceptedMap[String(j._id)] || 0) > 0 || j.status === 'filled');
+        const ws = isMulti ? null : sessionByJob[String(j._id)];
+        const team = teamByJob[String(j._id)] || null;
         const appCount = countMap[String(j._id)] || 0;
         const squadCount = squadCountMap[String(j._id)] || 0;
         const bidCount = appCount + squadCount;
-        const phase = resolvePhase(j, ws, hasAcceptedApplicant);
+        const phase = resolvePhase(j, ws, team);
         const actionRequiredCount = actionCountByJob[String(j._id)] || 0;
         const assignedId = assignedFreelancerByJob[String(j._id)];
         const assignedUser = assignedId ? assignedUserMap[assignedId] : null;
+        const teamMemberRows = (teamMembersByJob[String(j._id)] || []).map((m) => {
+          const u = assignedUserMap[m.freelancerId];
+          return {
+            id: m.freelancerId,
+            firstName: u?.firstName || '',
+            lastName: u?.lastName || '',
+            profilePicture: u?.profilePicture || '',
+            freelancerId: u?.freelancerId || '',
+            headline: u?.professionalSummary || u?.degreeName || u?.degree || '',
+            roleKey: m.roleKey || '',
+            roleName: m.roleName || '',
+            roleStatus: m.roleStatus || null,
+          };
+        });
 
         if (phase === 'pending') pendingBidTotal += bidCount;
         if (phase === 'in_progress' || phase === 'completed') {
           progressActionTotal += actionRequiredCount;
         }
+
+        const pendingStage = isMulti && rolesFilled > 0 && !multiComplete
+          ? `Roles filled ${rolesFilled}/${rolesTotal} · ${bidCount} open bid${bidCount === 1 ? '' : 's'}`
+          : (bidCount > 0
+            ? `${bidCount} bid${bidCount === 1 ? '' : 's'} received`
+            : 'No bids yet');
 
         return {
         id: j._id,
@@ -607,7 +716,7 @@ export const getJobStatus = async (req, res) => {
         bidCount,
         actionRequiredCount,
         pendingBidders: pendingByJob[String(j._id)] || [],
-        assignedFreelancer: assignedUser
+        assignedFreelancer: (!isMulti || multiComplete) && assignedUser
           ? {
               id: String(assignedUser._id),
               firstName: assignedUser.firstName || '',
@@ -617,22 +726,22 @@ export const getJobStatus = async (req, res) => {
               headline: assignedUser.professionalSummary || assignedUser.degreeName || assignedUser.degree || '',
             }
           : null,
-        canDelete: !hasAcceptedApplicant,
+        assignedTeam: isMulti ? teamMemberRows : [],
+        canDelete: isMulti ? !multiComplete : !hasAcceptedApplicant,
         workspaceId: ws?._id || null,
-        workspaceStatus: ws?.status || null,
+        workspaceStatus: ws?.status || team?.status || null,
+        teamWorkspaceId: team?._id || null,
         assignedFreelancerId: ws ? String(ws.freelancerId) : assignedId || null,
         projectMode: j.projectMode || 'single',
         multiBidMode: j.multiBidMode || null,
         roles: j.roles || [],
-        rolesFilled: (j.roles || []).filter((r) => r.status === 'filled').length,
-        rolesTotal: (j.roles || []).length,
-        isMulti: (j.projectMode || 'single') === 'multi',
+        rolesFilled,
+        rolesTotal,
+        isMulti,
         stage: j.publishStatus === 'draft'
           ? 'Draft'
           : phase === 'pending'
-            ? (bidCount > 0
-              ? `${bidCount} bid${bidCount === 1 ? '' : 's'} received`
-              : 'No bids yet')
+            ? pendingStage
             : phase === 'in_progress'
               ? 'In progress'
               : phase === 'completed'
@@ -660,15 +769,41 @@ export const getJobStatus = async (req, res) => {
 export const getStatusUpdateCount = async (req, res) => {
   try {
     const employerId = req.user._id;
-    const [pendingApps, pendingSquads, actionSessions] = await Promise.all([
+    const [pendingApps, pendingSquads, actionSessions, teamRows] = await Promise.all([
       JobApplication.countDocuments({ employerId, status: 'pending' }),
       SquadBid.countDocuments({ employerId, status: 'submitted' }),
       WorkSession.countDocuments({
         employerId,
         status: { $in: ['final_submitted', 'awaiting_payment'] },
       }),
+      TeamWorkspace.find({ employerId })
+        .select('status progressUpdates members')
+        .lean(),
     ]);
-    res.json({ pending: pendingApps + pendingSquads + actionSessions });
+
+    let teamActions = 0;
+    for (const team of teamRows) {
+      if (team.status === 'awaiting_payment') teamActions += 1;
+      teamActions += (team.progressUpdates || []).filter((u) => {
+        if ((u.reviewStatus || 'pending') !== 'pending') return false;
+        const member = (team.members || []).find((m) => m.roleKey === u.roleKey);
+        return member && !['role_finalized', 'paid', 'certified'].includes(member.roleStatus);
+      }).length;
+    }
+
+    const draftSessions = await WorkSession.find({
+      employerId,
+      status: 'in_progress',
+      'progressUpdates.reviewStatus': 'pending',
+    }).select('progressUpdates').lean();
+    let draftActions = 0;
+    for (const ws of draftSessions) {
+      draftActions += (ws.progressUpdates || []).filter((u) => (u.reviewStatus || 'pending') === 'pending').length;
+    }
+
+    res.json({
+      pending: pendingApps + pendingSquads + actionSessions + teamActions + draftActions,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Failed to load status updates' });
   }
@@ -687,13 +822,23 @@ export const getJobApplications = async (req, res) => {
       .sort({ appliedAt: -1 })
       .lean();
 
-    await Promise.all(
-      apps.filter((a) => a.status === 'accepted').map((a) => ensureWorkSessionForApplication(a, job)),
-    );
+    const isMulti = job.projectMode === 'multi';
+    if (!isMulti) {
+      await Promise.all(
+        apps.filter((a) => a.status === 'accepted').map((a) => ensureWorkSessionForApplication(a, job)),
+      );
+    }
 
-    const sessions = await WorkSession.find({
-      applicationId: { $in: apps.map((a) => a._id) },
-    }).lean();
+    const TeamWorkspace = (await import('../models/TeamWorkspace.js')).default;
+    const teamWorkspace = isMulti
+      ? await TeamWorkspace.findOne({ jobPostingId: job._id }).lean()
+      : null;
+
+    const sessions = isMulti
+      ? []
+      : await WorkSession.find({
+        applicationId: { $in: apps.map((a) => a._id) },
+      }).lean();
     const sessionMap = Object.fromEntries(sessions.map((s) => [String(s.applicationId), s]));
 
     const freelancerIds = apps.map((a) => a.freelancerId);
@@ -731,6 +876,7 @@ export const getJobApplications = async (req, res) => {
         roleName: a.roleName || roleNameOverride || '',
         workspaceId: ws?._id || null,
         workspaceStatus: ws?.status || null,
+        teamWorkspaceId: teamWorkspace?._id || null,
         freelancer: mapApplicantFreelancer(f, badgeMap, tasksMap),
       };
     };
@@ -760,6 +906,7 @@ export const getJobApplications = async (req, res) => {
         roles,
         rolesFilled: roles.filter((r) => r.status === 'filled').length,
         rolesTotal: roles.length,
+        teamWorkspaceId: teamWorkspace?._id || null,
         budget: job.budget,
         budgetDisplay: toJobPublic(job.toObject ? job.toObject() : job).budgetDisplay,
       },
@@ -816,7 +963,24 @@ const reviewApplication = async (req, res, nextStatus) => {
       return res.status(400).json({ message: 'Application has already been reviewed' });
     }
 
-    // Role accepts go through dedicated handler (partial fill)
+    const job = await JobPosting.findById(application.jobPostingId);
+    const isMulti = job?.projectMode === 'multi';
+
+    if (nextStatus === 'accepted' && isMulti) {
+      if (!application.roleKey) {
+        return res.status(400).json({
+          message: 'This is a multi-role job. Accept a specific role bid, not the whole listing.',
+        });
+      }
+      if (application.bidType !== 'role') {
+        application.bidType = 'role';
+        await application.save();
+      }
+      req.params.applicationId = application._id;
+      const { acceptRoleApplication } = await import('./multiFreelancerController.js');
+      return acceptRoleApplication(req, res);
+    }
+
     if (nextStatus === 'accepted' && application.bidType === 'role' && application.roleKey) {
       req.params.applicationId = application._id;
       const { acceptRoleApplication } = await import('./multiFreelancerController.js');

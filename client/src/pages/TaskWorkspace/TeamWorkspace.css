@@ -1,0 +1,133 @@
+.tw-team-wait-list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.tw-team-wait-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong, #e5e7eb);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.tw-team-wait-list strong {
+  font-size: 0.9rem;
+  color: var(--text-primary, #111827);
+}
+
+.tw-team-wait-list span {
+  grid-column: 1;
+  font-size: 0.78rem;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.tw-team-wait-list em {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-blue, #326d5c);
+}
+
+.tw-team-role-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.tw-team-role-list .tw-guideline-row {
+  cursor: default;
+  align-items: flex-start;
+}
+
+.tw-team-role-row {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.tw-team-role-row strong {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.tw-team-role-row em,
+.tw-team-role-row small {
+  font-style: normal;
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.tw-role-filter {
+  width: auto;
+  min-width: 140px;
+  max-width: 180px;
+  padding: 6px 10px;
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+
+.tw-composer__role {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.tw-team-chat-links {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 16px;
+}
+
+.tw-row--stack {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 2px;
+}
+
+.tw-row--stack em {
+  font-style: normal;
+  font-size: 0.75rem;
+}
+
+.tw-team-bill-block {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tw-team-bill-block:last-of-type {
+  margin-bottom: 4px;
+}
+
+.tw-icon-circle--ok {
+  background: #e5f0ec;
+  color: #326d5c;
+}
+
+.tw-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.tw-section-head .tw-section-kicker {
+  margin: 0;
+}
+
+.tw-section-head .tw-section-hint {
+  flex: 1 1 200px;
+}

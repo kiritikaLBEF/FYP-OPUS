@@ -174,7 +174,9 @@ const verifyPendingOrLegacyOtp = async (normalizedEmail, otpCode) => {
   user.isEmailVerified = true;
   user.otp = undefined;
   user.otpExpires = undefined;
-  user.onboardingStep = nextStepAfterOtp(user);
+  // Google accounts still need a local password next; email/password users continue role onboarding
+  const needsPassword = Boolean(user.googleId) && !user.password;
+  user.onboardingStep = needsPassword ? 'password' : nextStepAfterOtp(user);
   await user.save();
   return { user };
 };
@@ -259,8 +261,18 @@ export const login = async (req, res) => {
       });
     }
 
-    if (!user.isEmailVerified && user.authProvider === 'local') {
-      return res.status(401).json({ message: 'Please verify your email first', needsOtp: true, email: user.email });
+    if (!user.isEmailVerified) {
+      return res.status(401).json({
+        message: 'Please verify your email with the OTP code first',
+        needsOtp: true,
+        email: user.email,
+      });
+    }
+
+    if (!user.password) {
+      return res.status(401).json({
+        message: 'This account uses Google sign-in. Continue with Google, or finish onboarding to set a password.',
+      });
     }
 
     const valid = await user.comparePassword(password);
@@ -280,7 +292,7 @@ export const login = async (req, res) => {
 
 export const googleAuth = async (req, res) => {
   try {
-    const { credential, role } = req.body;
+    const { credential, role, organizationName } = req.body;
     if (!credential) {
       return res.status(400).json({ message: 'Google credential is required' });
     }
@@ -300,30 +312,95 @@ export const googleAuth = async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, given_name, family_name, picture } = payload;
 
+    if (!email) {
+      return res.status(400).json({ message: 'Google account email is required' });
+    }
+
     let user = await User.findOne({ $or: [{ googleId }, { email: email.toLowerCase() }] });
     let isNew = false;
+    const roleProvided = role === 'freelancer' || role === 'employer';
 
     if (user) {
       if (!user.googleId) {
         user.googleId = googleId;
         user.googlePicture = picture;
         user.authProvider = user.password ? 'both' : 'google';
-        user.isEmailVerified = true;
+        if (!user.profilePicture && picture) user.profilePicture = picture;
         await user.save();
       }
+
+      // Incomplete Google/local signup still waiting for email OTP
+      if (!user.isEmailVerified || user.onboardingStep === 'otp') {
+        const otp = generateOtp();
+        user.otp = otp;
+        user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        user.onboardingStep = 'otp';
+        user.isEmailVerified = false;
+        if (picture) user.googlePicture = picture;
+        await user.save();
+        await sendOtpEmail(user.email, otp, user.firstName || 'there');
+
+        const token = signOnboardingToken(user._id);
+        return res.json({
+          ...formatAuthResponse(user, token),
+          onboardingStep: 'otp',
+          needsOnboarding: true,
+          needsOtp: true,
+          email: user.email,
+          isNew: false,
+          skipOtp: false,
+        });
+      }
     } else {
+      // New Google account — require explicit Freelancer / Employer choice
+      if (!roleProvided) {
+        return res.json({
+          needsRoleSelection: true,
+          email: email.toLowerCase(),
+          firstName: given_name || '',
+          lastName: family_name || '',
+          picture: picture || '',
+        });
+      }
+
+      const publicRole = safePublicRole(role);
+      const isEmployer = publicRole === 'employer';
+      const orgName = String(organizationName || '').trim();
+
+      if (isEmployer && !orgName) {
+        return res.status(400).json({ message: 'Organization name is required for employer accounts' });
+      }
+
+      const otp = generateOtp();
       isNew = true;
       user = await User.create({
-        firstName: given_name || 'User',
-        lastName: family_name || '',
+        firstName: isEmployer ? orgName : (given_name || 'User'),
+        lastName: isEmployer ? '' : (family_name || ''),
         email: email.toLowerCase(),
         googleId,
         googlePicture: picture,
-        role: safePublicRole(role),
+        role: publicRole,
+        organizationName: isEmployer ? orgName : '',
         authProvider: 'google',
-        isEmailVerified: true,
-        onboardingStep: 'password',
+        isEmailVerified: false,
+        onboardingStep: 'otp',
+        otp,
+        otpExpires: new Date(Date.now() + 10 * 60 * 1000),
         profilePicture: picture || getAvatarUrl(getRandomAvatarSeed()),
+      });
+
+      await sendOtpEmail(user.email, otp, user.firstName || 'there');
+
+      const token = signOnboardingToken(user._id);
+      return res.json({
+        ...formatAuthResponse(user, token),
+        onboardingStep: 'otp',
+        needsOnboarding: true,
+        needsOtp: true,
+        email: user.email,
+        isNew: true,
+        skipOtp: false,
+        googlePicture: picture,
       });
     }
 
@@ -341,23 +418,18 @@ export const googleAuth = async (req, res) => {
         onboardingStep: 'complete',
         needsOnboarding: false,
         isNew: false,
-        skipOtp: true,
+        skipOtp: false,
       });
     }
 
+    // Returning incomplete but email-verified Google user — continue onboarding (password / docs / etc.)
     const token = signOnboardingToken(user._id);
-    const step = user.onboardingStep === 'otp' ? 'password' : user.onboardingStep;
-    if (user.onboardingStep === 'otp') {
-      user.onboardingStep = 'password';
-      await user.save();
-    }
-
     res.json({
       ...formatAuthResponse(user, token),
-      onboardingStep: step,
+      onboardingStep: user.onboardingStep,
       needsOnboarding: true,
       isNew,
-      skipOtp: true,
+      skipOtp: false,
       googlePicture: picture,
     });
   } catch (err) {

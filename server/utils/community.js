@@ -13,12 +13,12 @@ export const ROLE_RANK = {
 };
 
 export const displayUserName = (user) => {
-  if (!user) return 'Member';
+  if (!user) return 'Unknown member';
   if (user.role === 'employer') {
-    return user.organizationName || [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Organization';
+    return user.organizationName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Organization';
   }
   const full = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-  return full || user.name || user.username || 'Member';
+  return full || user.name || user.username || user.email || 'Unknown member';
 };
 
 export const slugify = (name) => {
@@ -79,6 +79,7 @@ export const serializeAuthor = (user) => {
   return {
     id: String(user._id),
     name: displayUserName(user),
+    email: user.email || '',
     role: user.role,
     profilePicture: user.profilePicture || '',
     firstName: user.firstName || '',
@@ -102,18 +103,31 @@ export const serializeMessage = (msg, author) => ({
   updatedAt: msg.updatedAt,
 });
 
-export const serializeMember = (member, user, onlineIds = new Set()) => ({
-  id: String(member._id),
-  groupId: String(member.groupId),
-  userId: String(member.userId),
-  role: member.role,
-  status: member.status,
-  statusReason: member.statusReason || '',
-  joinedAt: member.joinedAt,
-  lastSeenAt: member.lastSeenAt,
-  online: onlineIds.has(String(member.userId)),
-  user: serializeAuthor(user),
-});
+export const serializeMember = (member, user, onlineIds = new Set()) => {
+  const userId = String(member.userId);
+  return {
+    id: String(member._id),
+    groupId: String(member.groupId),
+    userId,
+    role: member.role,
+    status: member.status,
+    statusReason: member.statusReason || '',
+    joinedAt: member.joinedAt,
+    lastSeenAt: member.lastSeenAt,
+    online: onlineIds.has(userId),
+    user: serializeAuthor(user) || {
+      id: userId,
+      name: 'Account removed',
+      email: '',
+      role: '',
+      profilePicture: '',
+      firstName: '',
+      lastName: '',
+      organizationName: '',
+      missing: true,
+    },
+  };
+};
 
 export const serializeGroup = (group, membership = null, extras = {}) => ({
   id: String(group._id),
@@ -186,7 +200,7 @@ export function inviteIsValid(invite) {
 export async function loadAuthorsMap(userIds) {
   const ids = [...new Set(userIds.map(String))];
   const users = await User.find({ _id: { $in: ids } })
-    .select('firstName lastName name username role organizationName profilePicture')
+    .select('firstName lastName name username email role organizationName profilePicture')
     .lean();
   return Object.fromEntries(users.map((u) => [String(u._id), u]));
 }

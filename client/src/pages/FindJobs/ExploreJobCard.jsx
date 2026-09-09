@@ -1,11 +1,23 @@
+import { useNavigate } from 'react-router-dom';
 import { JobCover } from '../../components/jobs/JobDetailModal';
 import { fmtBudget, fmtDeadline, orgInitials, categoryLabel } from '../../utils/jobUtils';
 
 export default function ExploreJobCard({ job, onClick }) {
+  const navigate = useNavigate();
   const org = job?.organizationName || 'Organization';
   const initials = orgInitials(org);
   const skills = Array.isArray(job?.skillsRequired) ? job.skillsRequired.filter(Boolean) : [];
   const extraSkills = Math.max(0, skills.length - 3);
+  const employerUserId = job?.employerId ? String(job.employerId) : '';
+
+  const openEmployer = (e) => {
+    if (!employerUserId) return;
+    e.stopPropagation();
+    e.preventDefault();
+    navigate(`/employers/${employerUserId}`, {
+      state: { from: '/find-jobs', fromLabel: 'Back to job listing' },
+    });
+  };
 
   return (
     <button type="button" className="explore-job-card" onClick={onClick}>
@@ -18,7 +30,15 @@ export default function ExploreJobCard({ job, onClick }) {
       <div className="explore-job-card__body">
         <h3 className="explore-job-card__title">{job?.title || 'Job title'}</h3>
 
-        <div className="explore-job-card__org">
+        <div
+          className={`explore-job-card__org${employerUserId ? ' explore-job-card__org--link' : ''}`}
+          onClick={openEmployer}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') openEmployer(e);
+          }}
+          role={employerUserId ? 'link' : undefined}
+          tabIndex={employerUserId ? 0 : undefined}
+        >
           <span className="explore-job-card__avatar" aria-hidden="true">{initials}</span>
           <span className="explore-job-card__org-name">{org}</span>
         </div>

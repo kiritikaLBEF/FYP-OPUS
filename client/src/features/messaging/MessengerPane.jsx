@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMessaging } from './MessagingProvider';
 import { useAuth } from '../../context/AuthContext';
 import ConversationList from './ConversationList';
@@ -13,6 +14,7 @@ export default function MessengerPane({
   wide = false,
 }) {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const {
     conversations,
     activeId,
@@ -43,6 +45,11 @@ export default function MessengerPane({
       q: search,
     });
   }, [tab, search, refreshConversations]);
+
+  useEffect(() => {
+    const c = searchParams.get('c');
+    if (c) openConversation(c);
+  }, [searchParams, openConversation]);
 
   const visible = useMemo(() => {
     if (tab === 'unread') return conversations.filter((c) => (c.unread || 0) > 0);
