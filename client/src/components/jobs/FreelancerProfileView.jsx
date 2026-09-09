@@ -12,25 +12,72 @@ const normalizeUrl = (url) => {
   return `https://${trimmed}`;
 };
 
+const formatLocation = (data) => {
+  const parts = [data.city, data.stateProvince, data.country].filter(Boolean);
+  return parts.join(', ');
+};
+
+const formatEducationYear = (data) => {
+  if (data.stillRunning) return 'Currently studying';
+  if (data.passoutYear) return `Class of ${data.passoutYear}`;
+  return '';
+};
+
+const formatMemberSince = (value) => {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  } catch {
+    return '';
+  }
+};
+
+function ProfileSection({ title, children, empty, emptyText }) {
+  return (
+    <section className="fl-profile-section">
+      <h3>{title}</h3>
+      {empty ? <p className="fl-profile-empty">{emptyText}</p> : children}
+    </section>
+  );
+}
+
 export default function FreelancerProfileView({ data, onPreviewProject }) {
   if (!data) return null;
+
   const avatar = data.profilePicture ? getProfileUrl(data.profilePicture) : '';
+  const location = formatLocation(data);
+  const educationYear = formatEducationYear(data);
+  const memberSince = formatMemberSince(data.memberSince);
+
+  const aboutText = [data.bio, data.professionalSummary, data.careerObjectives]
+    .find((text) => String(text || '').trim()) || '';
+
+  const hasEducation = !!(data.schoolName || data.degree || data.degreeName || educationYear);
+  const hasSkills = data.skills?.length > 0;
+  const hasBadges = data.badges?.length > 0;
+  const hasProjects = data.projects?.length > 0;
+  const hasCerts = data.certifications?.length > 0;
+  const hasInterests = data.interests?.length > 0;
 
   return (
     <>
       <header className="fl-profile-hero">
         <div className="fl-profile-hero__avatar">
-          {avatar ? <img src={avatar} alt="" /> : <span>{data.firstName?.[0]}{data.lastName?.[0]}</span>}
+          {avatar ? (
+            <img src={avatar} alt="" />
+          ) : (
+            <span>{data.firstName?.[0]}{data.lastName?.[0]}</span>
+          )}
         </div>
-        <div>
+        <div className="fl-profile-hero__main">
           <h2>{data.firstName} {data.lastName}</h2>
-          <p className="fl-profile-hero__id">{data.freelancerId}</p>
-          {data.headline ? <p className="fl-profile-hero__meta">{data.headline}</p> : null}
-          {data.schoolName ? <p className="fl-profile-hero__meta">{data.schoolName}</p> : null}
-          <p className="fl-profile-hero__meta">
-            {[data.degree, [data.city, data.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
-          </p>
-          {data.badges?.length > 0 && (
+          {data.headline && <p className="fl-profile-hero__headline">{data.headline}</p>}
+          {data.freelancerId && <p className="fl-profile-hero__id">{data.freelancerId}</p>}
+          <div className="fl-profile-hero__meta-row">
+            {location && <span>{location}</span>}
+            {memberSince && <span>Member since {memberSince}</span>}
+          </div>
+          {hasBadges && (
             <div className="fl-profile-hero__badges">
               {data.badges.map((badge) => (
                 <OpusBadge key={badge.id} badge={badge} size="sm" />
@@ -40,25 +87,100 @@ export default function FreelancerProfileView({ data, onPreviewProject }) {
         </div>
       </header>
 
-      {(data.bio || data.professionalSummary) && (
-        <section className="fl-profile-section">
-          <h3>About</h3>
-          <p>{data.bio || data.professionalSummary}</p>
-        </section>
-      )}
+      <div className="fl-profile-stats" aria-label="Profile highlights">
+        <div className="fl-profile-stat">
+          <strong>{data.tasksCompleted ?? 0}</strong>
+          <span>Tasks completed</span>
+        </div>
+        <div className="fl-profile-stat">
+          <strong>{data.projects?.length ?? 0}</strong>
+          <span>Projects</span>
+        </div>
+        <div className="fl-profile-stat">
+          <strong>{data.certifications?.length ?? 0}</strong>
+          <span>Certifications</span>
+        </div>
+        <div className="fl-profile-stat">
+          <strong>{data.badges?.length ?? 0}</strong>
+          <span>Badges</span>
+        </div>
+      </div>
 
-      {data.skills?.length > 0 && (
-        <section className="fl-profile-section">
-          <h3>Skills</h3>
-          <div className="fl-profile-tags">
-            {data.skills.map((s) => <span key={s}>{s}</span>)}
-          </div>
-        </section>
-      )}
+      <ProfileSection
+        title="About"
+        empty={!aboutText}
+        emptyText="This freelancer has not added a bio yet."
+      >
+        <p>{aboutText}</p>
+      </ProfileSection>
 
-      {data.projects?.length > 0 && (
-        <section className="fl-profile-section">
-          <h3>Portfolio ({data.projects.length})</h3>
+      <ProfileSection
+        title="Education"
+        empty={!hasEducation}
+        emptyText="Education details have not been added yet."
+      >
+        <dl className="fl-profile-education">
+          {data.schoolName && (
+            <div className="fl-profile-education__row">
+              <dt>School / University</dt>
+              <dd>{data.schoolName}</dd>
+            </div>
+          )}
+          {data.degree && (
+            <div className="fl-profile-education__row">
+              <dt>Level</dt>
+              <dd>{data.degree}</dd>
+            </div>
+          )}
+          {data.degreeName && (
+            <div className="fl-profile-education__row">
+              <dt>Field of study</dt>
+              <dd>{data.degreeName}</dd>
+            </div>
+          )}
+          {educationYear && (
+            <div className="fl-profile-education__row">
+              <dt>Timeline</dt>
+              <dd>{educationYear}</dd>
+            </div>
+          )}
+        </dl>
+      </ProfileSection>
+
+      <ProfileSection
+        title="Skills"
+        empty={!hasSkills}
+        emptyText="No skills listed yet."
+      >
+        <div className="fl-profile-tags">
+          {data.skills.map((s) => <span key={s}>{s}</span>)}
+        </div>
+      </ProfileSection>
+
+      <ProfileSection
+        title="Badges"
+        empty={!hasBadges}
+        emptyText="No OPUS badges awarded yet."
+      >
+        <ul className="fl-profile-badge-list">
+          {data.badges.map((badge) => (
+            <li key={badge.id} className="fl-profile-badge-item">
+              <OpusBadge badge={badge} size="md" />
+              <div>
+                <strong>{badge.label}</strong>
+                {badge.description && <p>{badge.description}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </ProfileSection>
+
+      <ProfileSection
+        title={`Portfolio${hasProjects ? ` (${data.projects.length})` : ''}`}
+        empty={!hasProjects}
+        emptyText="No portfolio projects have been added yet."
+      >
+        <>
           <p className="fl-profile-section__hint">Click a project to preview screenshots, links, and files.</p>
           <div className="fl-profile-projects">
             {data.projects.map((p) => {
@@ -90,31 +212,40 @@ export default function FreelancerProfileView({ data, onPreviewProject }) {
               );
             })}
           </div>
-        </section>
-      )}
+        </>
+      </ProfileSection>
 
-      {data.certifications?.length > 0 && (
-        <section className="fl-profile-section">
-          <h3>Certifications</h3>
-          <ul className="fl-profile-certs">
-            {data.certifications.map((c) => (
-              <li key={c._id || c.name} className="fl-profile-cert">
-                <div>
-                  <strong>{c.name}</strong>
-                  {c.organization && <span className="fl-profile-cert__org"> · {c.organization}</span>}
-                </div>
-                <div className="fl-profile-cert__actions">
-                  {c.credentialUrl && (
-                    <a href={normalizeUrl(c.credentialUrl)} target="_blank" rel="noopener noreferrer">View credential</a>
-                  )}
-                  {c.filePath && (
-                    <a href={getProfileUrl(c.filePath)} target="_blank" rel="noopener noreferrer">View certificate</a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <ProfileSection
+        title="Certifications"
+        empty={!hasCerts}
+        emptyText="No certifications listed yet."
+      >
+        <ul className="fl-profile-certs">
+          {data.certifications.map((c) => (
+            <li key={c._id || c.name} className="fl-profile-cert">
+              <div>
+                <strong>{c.name}</strong>
+                {c.organization && <span className="fl-profile-cert__org"> · {c.organization}</span>}
+              </div>
+              <div className="fl-profile-cert__actions">
+                {c.credentialUrl && (
+                  <a href={normalizeUrl(c.credentialUrl)} target="_blank" rel="noopener noreferrer">View credential</a>
+                )}
+                {c.filePath && (
+                  <a href={getProfileUrl(c.filePath)} target="_blank" rel="noopener noreferrer">View certificate</a>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </ProfileSection>
+
+      {hasInterests && (
+        <ProfileSection title="Interests" empty={false}>
+          <div className="fl-profile-tags">
+            {data.interests.map((item) => <span key={item}>{item}</span>)}
+          </div>
+        </ProfileSection>
       )}
     </>
   );

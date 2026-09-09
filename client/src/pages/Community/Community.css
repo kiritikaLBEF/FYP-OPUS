@@ -524,6 +524,11 @@
   color: var(--cm-accent);
 }
 
+.cm-iconBtn--warn:hover {
+  background: rgba(229, 120, 157, 0.12);
+  color: #e5789d;
+}
+
 .cm-alertBar,
 .cm-inviteBanner {
   display: flex;
@@ -1128,7 +1133,8 @@
 }
 
 .cm-field input,
-.cm-field textarea {
+.cm-field textarea,
+.cm-field select {
   width: 100%;
   background: var(--cm-bg-raised);
   border: 1px solid var(--cm-border-soft);
@@ -1141,7 +1147,8 @@
 }
 
 .cm-field input:focus,
-.cm-field textarea:focus {
+.cm-field textarea:focus,
+.cm-field select:focus {
   border-color: var(--cm-accent);
 }
 

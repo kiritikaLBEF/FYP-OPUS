@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import { verifyToken } from '../utils/jwt.js';
 import { isSuperAdminUser } from '../utils/adminConfig.js';
+import { hasAdminPrivilege } from '../utils/adminPrivileges.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -82,6 +83,14 @@ export const requireSuperAdmin = (req, res, next) => {
     return res.status(403).json({ message: 'Super admin access only' });
   }
   next();
+};
+
+export const requireAdminPrivilege = (key) => (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access only' });
+  }
+  if (hasAdminPrivilege(req.user, key)) return next();
+  return res.status(403).json({ message: 'You do not have permission for this section' });
 };
 
 /** Attaches req.user when a valid token is present; never blocks. */

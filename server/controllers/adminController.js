@@ -10,6 +10,7 @@ import { NUDGE_TEMPLATES, JOB_DELETE_REASONS, FLAG_REASONS, TEMPLATE_CATEGORIES,
 import { sendEmail } from '../utils/email.js';
 import { applyEmailPlaceholders, buildEmailContext } from '../utils/emailPlaceholders.js';
 import { isSuperAdminUser } from '../utils/adminConfig.js';
+import { normalizeAdminPrivileges, serializeAdminPrivilegesForClient } from '../utils/adminPrivileges.js';
 import { toJobPublic } from '../utils/jobSerializer.js';
 
 const OVERDUE_INACTIVE_DAYS = Number(process.env.GIG_OVERDUE_DAYS || 7);
@@ -39,6 +40,7 @@ const toUserLite = (u) => ({
   email: u.email || '',
   role: u.role,
   adminTier: u.adminTier || '',
+  adminPrivileges: serializeAdminPrivilegesForClient(u),
   accountStatus: u.accountStatus || 'active',
   verificationStatus: u.verificationStatus || 'pending',
   verificationRejectionReason: u.verificationRejectionReason || '',
@@ -870,7 +872,7 @@ export const listAdmins = async (_req, res) => {
 
 export const createAdmin = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, adminTier } = req.body;
+    const { firstName, lastName, email, password, adminTier, adminPrivileges } = req.body;
     if (!firstName?.trim() || !email?.trim() || !password?.trim()) {
       return res.status(400).json({ message: 'firstName, email and password are required' });
     }
@@ -887,6 +889,7 @@ export const createAdmin = async (req, res) => {
       password: await User.hashPassword(password),
       role: 'admin',
       adminTier: tier,
+      adminPrivileges: tier === 'admin' ? normalizeAdminPrivileges(adminPrivileges) : undefined,
       isEmailVerified: true,
       onboardingComplete: true,
       onboardingStep: 'complete',
@@ -910,7 +913,7 @@ export const createAdmin = async (req, res) => {
 
 export const updateAdmin = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, adminTier } = req.body;
+    const { firstName, lastName, email, password, adminTier, adminPrivileges } = req.body;
     const admin = await User.findById(req.params.adminId).select('+password');
     if (!admin || admin.role !== 'admin') return res.status(404).json({ message: 'Admin not found' });
     if (isSuperAdminUser(admin) && req.user._id.toString() !== admin._id.toString()) {
@@ -929,7 +932,17 @@ export const updateAdmin = async (req, res) => {
       admin.password = await User.hashPassword(password.trim());
     }
     if (adminTier && !isSuperAdminUser(admin)) {
-      admin.adminTier = adminTier === 'super_admin' ? 'super_admin' : 'admin';
+      const nextTier = adminTier === 'super_admin' ? 'super_admin' : 'admin';
+      admin.adminTier = nextTier;
+      if (nextTier === 'super_admin') {
+        admin.adminPrivileges = undefined;
+      } else if (adminPrivileges) {
+        admin.adminPrivileges = normalizeAdminPrivileges(adminPrivileges);
+      } else {
+        admin.adminPrivileges = normalizeAdminPrivileges(admin.adminPrivileges || {});
+      }
+    } else if (admin.adminTier === 'admin' && adminPrivileges && !isSuperAdminUser(admin)) {
+      admin.adminPrivileges = normalizeAdminPrivileges(adminPrivileges);
     }
 
     await admin.save();

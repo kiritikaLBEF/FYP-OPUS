@@ -27,7 +27,9 @@ import AdminManagement from './pages/Admin/AdminManagement';
 import AdminAds from './pages/Admin/AdminAds';
 import AdminFeatured from './pages/Admin/AdminFeatured';
 import AdminBadges from './pages/Admin/AdminBadges';
+import AdminCommunity from './pages/Admin/AdminCommunity';
 import SuperAdminRoute from './components/SuperAdminRoute';
+import AdminPrivilegeRoute from './components/AdminPrivilegeRoute';
 import FindJobs from './pages/FindJobs/FindJobs';
 import PublicJobView from './pages/FindJobs/PublicJobView';
 import TaskWorkspace from './pages/TaskWorkspace/TaskWorkspace';
@@ -151,16 +153,17 @@ export default function App() {
         >
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<AdminOverview />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="users/:userId" element={<AdminUserProfile />} />
-          <Route path="verification" element={<AdminVerification />} />
-          <Route path="jobs" element={<AdminJobPosts />} />
-          <Route path="gigs" element={<AdminGigs />} />
-          <Route path="ads" element={<AdminAds />} />
-          <Route path="featured" element={<AdminFeatured />} />
-          <Route path="badges" element={<AdminBadges />} />
-          <Route path="flags" element={<AdminFlags />} />
-          <Route path="templates" element={<AdminTemplates />} />
+          <Route path="users" element={<AdminPrivilegeRoute privilege="users"><AdminUsers /></AdminPrivilegeRoute>} />
+          <Route path="users/:userId" element={<AdminPrivilegeRoute privilege="users"><AdminUserProfile /></AdminPrivilegeRoute>} />
+          <Route path="verification" element={<AdminPrivilegeRoute privilege="verification"><AdminVerification /></AdminPrivilegeRoute>} />
+          <Route path="jobs" element={<AdminPrivilegeRoute privilege="jobs"><AdminJobPosts /></AdminPrivilegeRoute>} />
+          <Route path="gigs" element={<AdminPrivilegeRoute privilege="monitor"><AdminGigs /></AdminPrivilegeRoute>} />
+          <Route path="ads" element={<AdminPrivilegeRoute privilege="homepageAds"><AdminAds /></AdminPrivilegeRoute>} />
+          <Route path="featured" element={<AdminPrivilegeRoute privilege="featured"><AdminFeatured /></AdminPrivilegeRoute>} />
+          <Route path="badges" element={<AdminPrivilegeRoute privilege="badges"><AdminBadges /></AdminPrivilegeRoute>} />
+          <Route path="flags" element={<AdminPrivilegeRoute privilege="users"><AdminFlags /></AdminPrivilegeRoute>} />
+          <Route path="community" element={<AdminPrivilegeRoute privilege="community"><AdminCommunity /></AdminPrivilegeRoute>} />
+          <Route path="templates" element={<SuperAdminRoute><AdminTemplates /></SuperAdminRoute>} />
           <Route path="analytics" element={<SuperAdminRoute><AdminAnalytics /></SuperAdminRoute>} />
           <Route path="management" element={<SuperAdminRoute><AdminManagement /></SuperAdminRoute>} />
         </Route>

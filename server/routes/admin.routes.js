@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { protect, requireAdmin, requireOnboardingComplete, requireSuperAdmin } from '../middleware/auth.js';
+import { protect, requireAdmin, requireOnboardingComplete, requireSuperAdmin, requireAdminPrivilege } from '../middleware/auth.js';
 import { uploadAdImage, handleUpload } from '../middleware/upload.js';
 import {
   getAdminOverview,
@@ -31,6 +31,13 @@ import {
   getAdminMeta,
 } from '../controllers/adminController.js';
 import {
+  listAdminCommunityGroups,
+  getAdminCommunityGroup,
+  listAdminCommunityGroupMembers,
+  updateAdminCommunityGroupModeration,
+  dismissAdminCommunityReports,
+} from '../controllers/adminCommunityController.js';
+import {
   listAdminAds,
   createAdminAd,
   updateAdminAd,
@@ -51,28 +58,29 @@ const router = Router();
 router.use(protect, requireOnboardingComplete, requireAdmin);
 
 router.get('/overview', getAdminOverview);
-router.get('/users/segment/:segment', listUsersBySegment);
-router.get('/users', listUsers);
-router.get('/users/:userId', getUserDetail);
-router.put('/users/:userId', updateUser);
-router.delete('/users/:userId', deleteUser);
-router.post('/users/:userId/flag', flagUser);
-router.post('/users/:userId/suspend', suspendUser);
 
-router.get('/verification-queue', verificationQueue);
-router.get('/verification-queue/:userId', getVerificationDetail);
-router.post('/verification-queue/:userId/approve', approveVerification);
-router.post('/verification-queue/:userId/reject', rejectVerification);
+router.get('/users/segment/:segment', requireAdminPrivilege('users'), listUsersBySegment);
+router.get('/users', requireAdminPrivilege('users'), listUsers);
+router.get('/users/:userId', requireAdminPrivilege('users'), getUserDetail);
+router.put('/users/:userId', requireAdminPrivilege('users'), updateUser);
+router.delete('/users/:userId', requireAdminPrivilege('users'), deleteUser);
+router.post('/users/:userId/flag', requireAdminPrivilege('users'), flagUser);
+router.post('/users/:userId/suspend', requireAdminPrivilege('users'), suspendUser);
 
-router.get('/gigs', listGigs);
-router.get('/jobs', listJobPosts);
-router.get('/jobs/:jobId', getJobPostDetail);
-router.delete('/jobs/:jobId', deleteJobPost);
+router.get('/verification-queue', requireAdminPrivilege('verification'), verificationQueue);
+router.get('/verification-queue/:userId', requireAdminPrivilege('verification'), getVerificationDetail);
+router.post('/verification-queue/:userId/approve', requireAdminPrivilege('verification'), approveVerification);
+router.post('/verification-queue/:userId/reject', requireAdminPrivilege('verification'), rejectVerification);
+
+router.get('/gigs', requireAdminPrivilege('monitor'), listGigs);
+router.get('/jobs', requireAdminPrivilege('jobs'), listJobPosts);
+router.get('/jobs/:jobId', requireAdminPrivilege('jobs'), getJobPostDetail);
+router.delete('/jobs/:jobId', requireAdminPrivilege('jobs'), deleteJobPost);
 router.get('/meta', getAdminMeta);
-router.get('/email-templates', listNudgeTemplates);
-router.post('/email-templates', saveNudgeTemplate);
-router.post('/nudges/:userId', sendNudge);
-router.post('/sent-notes/:sentNoteId/retry', retrySentNote);
+router.get('/email-templates', requireSuperAdmin, listNudgeTemplates);
+router.post('/email-templates', requireSuperAdmin, saveNudgeTemplate);
+router.post('/nudges/:userId', requireAdminPrivilege('users'), sendNudge);
+router.post('/sent-notes/:sentNoteId/retry', requireAdminPrivilege('users'), retrySentNote);
 
 router.get('/analytics', requireSuperAdmin, getAnalytics);
 router.get('/audit-logs', requireSuperAdmin, getAuditLogs);
@@ -82,20 +90,26 @@ router.post('/admins', requireSuperAdmin, createAdmin);
 router.put('/admins/:adminId', requireSuperAdmin, updateAdmin);
 router.post('/admins/:adminId/deactivate', requireSuperAdmin, deactivateAdmin);
 
-router.get('/ads', listAdminAds);
-router.post('/ads', handleUpload(uploadAdImage.single('image')), createAdminAd);
-router.put('/ads/:adId', handleUpload(uploadAdImage.single('image')), updateAdminAd);
-router.delete('/ads/:adId', deleteAdminAd);
+router.get('/ads', requireAdminPrivilege('homepageAds'), listAdminAds);
+router.post('/ads', requireAdminPrivilege('homepageAds'), handleUpload(uploadAdImage.single('image')), createAdminAd);
+router.put('/ads/:adId', requireAdminPrivilege('homepageAds'), handleUpload(uploadAdImage.single('image')), updateAdminAd);
+router.delete('/ads/:adId', requireAdminPrivilege('homepageAds'), deleteAdminAd);
 
-router.get('/badge-candidates', getBadgeCandidates);
-router.get('/featured', listFeaturedPerformers);
-router.post('/featured', addFeaturedPerformer);
-router.delete('/featured/:featuredId', removeFeaturedPerformer);
+router.get('/badge-candidates', requireAdminPrivilege('featured'), getBadgeCandidates);
+router.get('/featured', requireAdminPrivilege('featured'), listFeaturedPerformers);
+router.post('/featured', requireAdminPrivilege('featured'), addFeaturedPerformer);
+router.delete('/featured/:featuredId', requireAdminPrivilege('featured'), removeFeaturedPerformer);
 
-router.get('/badges', listBadges);
-router.post('/badges', saveBadge);
-router.get('/badge-awards', listUserAwards);
-router.post('/badge-awards', awardBadge);
-router.delete('/badge-awards/:awardId', revokeBadge);
+router.get('/badges', requireAdminPrivilege('badges'), listBadges);
+router.post('/badges', requireAdminPrivilege('badges'), saveBadge);
+router.get('/badge-awards', requireAdminPrivilege('badges'), listUserAwards);
+router.post('/badge-awards', requireAdminPrivilege('badges'), awardBadge);
+router.delete('/badge-awards/:awardId', requireAdminPrivilege('badges'), revokeBadge);
+
+router.get('/community/groups', requireAdminPrivilege('community'), listAdminCommunityGroups);
+router.get('/community/groups/:groupId', requireAdminPrivilege('community'), getAdminCommunityGroup);
+router.get('/community/groups/:groupId/members', requireAdminPrivilege('community'), listAdminCommunityGroupMembers);
+router.patch('/community/groups/:groupId/moderation', requireAdminPrivilege('community'), updateAdminCommunityGroupModeration);
+router.post('/community/groups/:groupId/dismiss-reports', requireAdminPrivilege('community'), dismissAdminCommunityReports);
 
 export default router;

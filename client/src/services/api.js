@@ -163,6 +163,7 @@ export const api = {
   getMySquadInvites: () => request('/api/jobs/mine/squad-invites'),
   getMySquadBids: () => request('/api/jobs/mine/squad-bids'),
   getEmployerJobStatus: () => request('/api/employer/status'),
+  getEmployerWalletCommitment: () => request('/api/employer/wallet-commitment'),
   getEmployerStatusCount: () => request('/api/employer/status-count'),
   getEmployerJobApplications: (jobId) => request(`/api/employer/jobs/${jobId}/applications`),
   getEmployerApplicantProfile: (freelancerId) => request(`/api/employer/applicants/${freelancerId}/profile`),
@@ -216,6 +217,20 @@ export const api = {
   createAdminAccount: (body) => request('/api/admin/admins', { method: 'POST', body: JSON.stringify(body) }),
   updateAdminAccount: (adminId, body) => request(`/api/admin/admins/${adminId}`, { method: 'PUT', body: JSON.stringify(body) }),
   deactivateAdminAccount: (adminId) => request(`/api/admin/admins/${adminId}/deactivate`, { method: 'POST' }),
+
+  getAdminCommunityGroups: (filter = 'all') => {
+    const qs = filter && filter !== 'all' ? `?filter=${encodeURIComponent(filter)}` : '';
+    return request(`/api/admin/community/groups${qs}`);
+  },
+  getAdminCommunityGroup: (groupId) => request(`/api/admin/community/groups/${groupId}`),
+  getAdminCommunityGroupMembers: (groupId) => request(`/api/admin/community/groups/${groupId}/members`),
+  updateAdminCommunityGroupModeration: (groupId, body) =>
+    request(`/api/admin/community/groups/${groupId}/moderation`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  dismissAdminCommunityReports: (groupId) =>
+    request(`/api/admin/community/groups/${groupId}/dismiss-reports`, { method: 'POST' }),
 
   getHomepage: () => request('/api/homepage'),
   getPublicFreelancerProfile: (userId) => request(`/api/homepage/freelancers/${userId}`),
@@ -361,6 +376,11 @@ export const api = {
   resolveCommunityInvite: (code) => request(`/api/community/invite/${code}`),
   joinCommunityByInvite: (code) =>
     request(`/api/community/invite/${code}/join`, { method: 'POST' }),
+  reportCommunityGroup: (groupId, body) =>
+    request(`/api/community/groups/${groupId}/report`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   getCommunityMessages: (groupId, { cursor = '', limit = 40 } = {}) => {
     const q = new URLSearchParams({ limit: String(limit) });
     if (cursor) q.set('cursor', cursor);

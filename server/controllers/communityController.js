@@ -18,6 +18,7 @@ import {
   loadAuthorsMap,
   attachmentTypeFromMime,
   ROLE_RANK,
+  getGroupModerationBlock,
 } from '../utils/community.js';
 import { communityPresence } from '../utils/communityPresence.js';
 import { getIO } from '../socket/index.js';
@@ -126,7 +127,10 @@ export const discoverGroups = async (req, res) => {
   try {
     if (!requireCommunityUser(req, res)) return;
     const q = String(req.query.q || '').trim();
-    const filter = { visibility: 'public' };
+    const filter = {
+      visibility: 'public',
+      moderationStatus: { $nin: ['restricted', 'suspended'] },
+    };
     if (q) filter.$text = { $search: q };
     const groups = await CommunityGroup.find(filter)
       .sort(q ? { score: { $meta: 'textScore' } } : { memberCount: -1, updatedAt: -1 })
@@ -261,6 +265,8 @@ export const joinPublicGroup = async (req, res) => {
     if (!requireCommunityUser(req, res)) return;
     const group = await CommunityGroup.findById(req.params.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found' });
+    const joinBlock = getGroupModerationBlock(group, 'join');
+    if (joinBlock) return res.status(403).json({ message: joinBlock });
     if (group.visibility !== 'public') {
       return res.status(400).json({ message: 'Use an invite link to join this private group' });
     }
@@ -500,6 +506,8 @@ export const joinByInvite = async (req, res) => {
     }
     const group = await CommunityGroup.findById(invite.groupId);
     if (!group) return res.status(404).json({ message: 'Group not found' });
+    const joinBlock = getGroupModerationBlock(group, 'join');
+    if (joinBlock) return res.status(403).json({ message: joinBlock });
 
     let membership = await getMembership(group._id, req.user._id);
     if (membership?.status === 'banned') {
@@ -597,6 +605,8 @@ export const sendMessage = async (req, res) => {
     if (!isActiveMember(membership)) {
       return res.status(403).json({ message: 'Join the group to post messages' });
     }
+    const postBlock = getGroupModerationBlock(group, 'post');
+    if (postBlock) return res.status(403).json({ message: postBlock });
     if (membership.status === 'inactive') {
       return res.status(403).json({ message: 'Your membership is inactive' });
     }
@@ -702,5 +712,52 @@ export const pinMessage = async (req, res) => {
   } catch (err) {
     console.error('pinMessage:', err);
     res.status(500).json({ message: 'Failed to update pin' });
+  }
+};
+
+const REPORT_REASONS = new Set([
+  'spam',
+  'harassment',
+  'hate_speech',
+  'scam',
+  'inappropriate_content',
+  'other',
+]);
+
+export const reportGroup = async (req, res) => {
+  try {
+    if (!requireCommunityUser(req, res)) return;
+    const group = await CommunityGroup.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    const reason = String(req.body.reason || '').trim();
+    if (!REPORT_REASONS.has(reason)) {
+      return res.status(400).json({ message: 'Select a valid report reason' });
+    }
+
+    const note = String(req.body.note || '').trim().slice(0, 2000);
+    const alreadyReported = (group.reports || []).some(
+      (r) => r.status === 'open' && String(r.reportedBy) === String(req.user._id),
+    );
+    if (alreadyReported) {
+      return res.status(400).json({ message: 'You already reported this group' });
+    }
+
+    group.reports.push({
+      reportedBy: req.user._id,
+      reporterName: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ').trim(),
+      reporterEmail: req.user.email || '',
+      reason,
+      note,
+      status: 'open',
+      createdAt: new Date(),
+    });
+    group.reportCount = (group.reports || []).filter((r) => r.status === 'open').length;
+    await group.save();
+
+    res.status(201).json({ message: 'Report submitted. OPUS admin will review this group.' });
+  } catch (err) {
+    console.error('reportGroup:', err);
+    res.status(500).json({ message: 'Failed to submit report' });
   }
 };

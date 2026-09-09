@@ -23,6 +23,7 @@ import {
   pinMessage,
   getCommunityUnread,
   markGroupRead,
+  reportGroup,
 } from '../controllers/communityController.js';
 
 const router = Router();
@@ -56,6 +57,7 @@ router.post('/invites/:inviteId/revoke', revokeInvite);
 router.get('/invite/:code', resolveInvite);
 router.post('/invite/:code/join', joinByInvite);
 
+router.post('/groups/:groupId/report', reportGroup);
 router.get('/groups/:groupId/messages', listMessages);
 router.post('/groups/:groupId/messages', handleCommunityUpload, sendMessage);
 router.delete('/messages/:messageId', deleteCommunityMessage);

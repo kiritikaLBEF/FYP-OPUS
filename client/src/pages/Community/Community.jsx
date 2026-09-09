@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import {
   Hash, Lock, Globe, Plus, Search, Users, Shield, ShieldCheck, Crown,
   Settings, UserPlus, Image as ImageIcon, Mic, Video, Send,
-  Trash2, X, Pin, Megaphone, Info, AlertTriangle, AlertOctagon,
+  Trash2, X, Pin, Flag, Megaphone, Info, AlertTriangle, AlertOctagon,
   ChevronDown, Copy, RefreshCw, Compass, LogOut,
 } from 'lucide-react';
 import { api, getProfileUrl } from '../../services/api';
@@ -32,6 +32,15 @@ const TYPE_META = {
 };
 
 const GROUP_COLORS = ['#5B8DEF', '#3FBFA0', '#E8A33D', '#6FB1E0', '#E5789D', '#4A7FD4'];
+
+const REPORT_REASONS = [
+  { value: 'spam', label: 'Spam or misleading content' },
+  { value: 'harassment', label: 'Harassment or bullying' },
+  { value: 'hate_speech', label: 'Hate speech' },
+  { value: 'scam', label: 'Scam or fraud' },
+  { value: 'inappropriate_content', label: 'Inappropriate content' },
+  { value: 'other', label: 'Other' },
+];
 
 const makeClientMsgId = () =>
   (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -205,6 +214,8 @@ export default function Community() {
   const [toast, setToast] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteInfo, setInviteInfo] = useState(null);
   const [inviteLink, setInviteLink] = useState('');
@@ -213,6 +224,7 @@ export default function Community() {
   const [mobilePane, setMobilePane] = useState(routeGroupId ? 'chat' : 'list');
   const [createForm, setCreateForm] = useState({ name: '', description: '', visibility: 'public' });
   const [settingsForm, setSettingsForm] = useState({ name: '', description: '', visibility: 'public' });
+  const [reportForm, setReportForm] = useState({ reason: 'spam', note: '' });
 
   const socketRef = useRef(null);
   const streamRef = useRef(null);
@@ -562,6 +574,26 @@ export default function Community() {
       flash(msg.pinned ? 'Pinned' : 'Unpinned');
     } catch (err) {
       setError(err.message || 'Could not update pin');
+    }
+  };
+
+  const handleReportGroup = async (e) => {
+    e.preventDefault();
+    if (!activeId) return;
+    setReporting(true);
+    setError('');
+    try {
+      const data = await api.reportCommunityGroup(activeId, {
+        reason: reportForm.reason,
+        note: reportForm.note.trim(),
+      });
+      setShowReport(false);
+      setReportForm({ reason: 'spam', note: '' });
+      flash(data.message || 'Report submitted. OPUS admin will review this group.');
+    } catch (err) {
+      setError(err.message || 'Could not submit report');
+    } finally {
+      setReporting(false);
     }
   };
 
@@ -920,6 +952,19 @@ export default function Community() {
                 >
                   <Pin size={16} />
                 </button>
+                {group.isMember && myRole !== 'owner' && (
+                  <button
+                    type="button"
+                    className="cm-iconBtn cm-iconBtn--warn"
+                    title="Report group"
+                    onClick={() => {
+                      setError('');
+                      setShowReport(true);
+                    }}
+                  >
+                    <Flag size={16} />
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`cm-iconBtn${membersOpen || mobilePane === 'members' ? ' on' : ''}`}
@@ -1406,6 +1451,48 @@ export default function Community() {
                 {isOwner && (
                   <button type="button" className="cm-btn danger" onClick={handleDeleteGroup}>Delete group</button>
                 )}
+              </div>
+            </form>
+          </div>
+        )}
+
+        {showReport && (
+          <div className="cm-overlay" onClick={() => setShowReport(false)} role="presentation">
+            <form className="cm-modal" onClick={(e) => e.stopPropagation()} onSubmit={handleReportGroup}>
+              <h3 className="cm-display">Report group</h3>
+              <p className="desc">
+                Your report is sent to OPUS admin for review. Include details so moderators can investigate.
+              </p>
+              <div className="cm-field">
+                <label htmlFor="cm-report-reason">Reason</label>
+                <select
+                  id="cm-report-reason"
+                  value={reportForm.reason}
+                  onChange={(e) => setReportForm((f) => ({ ...f, reason: e.target.value }))}
+                  required
+                >
+                  {REPORT_REASONS.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="cm-field">
+                <label htmlFor="cm-report-note">Description</label>
+                <textarea
+                  id="cm-report-note"
+                  value={reportForm.note}
+                  onChange={(e) => setReportForm((f) => ({ ...f, note: e.target.value }))}
+                  placeholder="Describe what happened and why you are reporting this group…"
+                  rows={5}
+                  maxLength={2000}
+                  required
+                />
+              </div>
+              <div className="cm-modalActions">
+                <button type="button" className="cm-btn ghost" onClick={() => setShowReport(false)}>Cancel</button>
+                <button type="submit" className="cm-btn danger" disabled={reporting || !reportForm.note.trim()}>
+                  {reporting ? 'Submitting…' : 'Submit report'}
+                </button>
               </div>
             </form>
           </div>

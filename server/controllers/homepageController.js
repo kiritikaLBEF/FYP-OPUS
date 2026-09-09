@@ -149,12 +149,19 @@ export const getPublicFreelancerProfile = async (req, res) => {
     if (!user || user.role !== 'freelancer' || user.accountStatus === 'suspended') {
       return res.status(404).json({ message: 'Freelancer not found' });
     }
+    if (user.privacySettings?.profileVisible === false) {
+      return res.status(404).json({ message: 'Profile not available' });
+    }
 
-    const badgeMap = await loadBadgesForUsers([user._id]);
+    const [badgeMap, tasksCompleted] = await Promise.all([
+      loadBadgesForUsers([user._id]),
+      WorkSession.countDocuments({ freelancerId: user._id, status: { $in: PAID_STATUSES } }),
+    ]);
     res.json({
       user: serializePublicFreelancer(user, {
         badges: badgeMap.get(String(user._id)) || [],
         headline: featured.headline || '',
+        tasksCompleted,
       }),
     });
   } catch (err) {

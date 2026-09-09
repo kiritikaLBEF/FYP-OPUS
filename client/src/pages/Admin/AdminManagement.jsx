@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import AdminModal from '../../components/admin/AdminModal';
+import AdminPrivilegesEditor, { AdminPrivilegesSummary } from '../../components/admin/AdminPrivilegesEditor';
+import { DEFAULT_ADMIN_PRIVILEGES } from '../../utils/adminPrivileges';
 import { userName } from './adminHelpers';
 import '../../components/Layout/admin-tokens.css';
 import '../../components/Layout/AdminLayout.css';
@@ -12,6 +14,7 @@ const EMPTY_FORM = {
   email: '',
   password: '',
   adminTier: 'admin',
+  adminPrivileges: { ...DEFAULT_ADMIN_PRIVILEGES },
 };
 
 export default function AdminManagement() {
@@ -48,7 +51,17 @@ export default function AdminManagement() {
     setCreating(true);
     setError('');
     try {
-      await api.createAdminAccount(form);
+      const body = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+        adminTier: form.adminTier,
+      };
+      if (form.adminTier === 'admin') {
+        body.adminPrivileges = form.adminPrivileges;
+      }
+      await api.createAdminAccount(body);
       setForm(EMPTY_FORM);
       await loadAdmins();
     } catch (err) {
@@ -66,6 +79,7 @@ export default function AdminManagement() {
       email: admin.email || '',
       password: '',
       adminTier: admin.adminTier === 'super_admin' ? 'super_admin' : 'admin',
+      adminPrivileges: { ...DEFAULT_ADMIN_PRIVILEGES, ...(admin.adminPrivileges || {}) },
     });
     setError('');
   };
@@ -82,6 +96,9 @@ export default function AdminManagement() {
         adminTier: editForm.adminTier,
       };
       if (editForm.password.trim()) body.password = editForm.password.trim();
+      if (editForm.adminTier === 'admin') {
+        body.adminPrivileges = editForm.adminPrivileges;
+      }
       await api.updateAdminAccount(editAdmin.id, body);
       setEditAdmin(null);
       await loadAdmins();
@@ -107,6 +124,26 @@ export default function AdminManagement() {
     }
   };
 
+  const handleCreateTierChange = (adminTier) => {
+    setForm((current) => ({
+      ...current,
+      adminTier,
+      adminPrivileges: adminTier === 'admin'
+        ? { ...DEFAULT_ADMIN_PRIVILEGES, ...current.adminPrivileges }
+        : { ...DEFAULT_ADMIN_PRIVILEGES },
+    }));
+  };
+
+  const handleEditTierChange = (adminTier) => {
+    setEditForm((current) => ({
+      ...current,
+      adminTier,
+      adminPrivileges: adminTier === 'admin'
+        ? { ...DEFAULT_ADMIN_PRIVILEGES, ...current.adminPrivileges }
+        : { ...DEFAULT_ADMIN_PRIVILEGES },
+    }));
+  };
+
   return (
     <>
       <header className="admin-page-header">
@@ -128,21 +165,29 @@ export default function AdminManagement() {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Tier</th>
+                  <th>Privileges</th>
                   <th>Status</th>
                   <th className="admin-table__actions-col">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={5} className="admin-muted">Loading…</td></tr>
+                  <tr><td colSpan={6} className="admin-muted">Loading…</td></tr>
                 ) : admins.length === 0 ? (
-                  <tr><td colSpan={5} className="admin-muted admin-table__empty">No admin accounts found.</td></tr>
+                  <tr><td colSpan={6} className="admin-muted admin-table__empty">No admin accounts found.</td></tr>
                 ) : (
                   admins.map((a) => (
                     <tr key={a.id}>
                       <td>{userName(a)}</td>
                       <td>{a.email}</td>
                       <td>{a.adminTier === 'super_admin' ? 'Super Admin' : 'Admin'}</td>
+                      <td>
+                        {a.adminTier === 'super_admin' ? (
+                          <span className="admin-muted">All sections</span>
+                        ) : (
+                          <AdminPrivilegesSummary privileges={a.adminPrivileges} />
+                        )}
+                      </td>
                       <td>
                         <span className={`admin-badge ${a.accountStatus === 'active' ? 'admin-badge--active' : 'admin-badge--suspended'}`}>
                           {a.accountStatus}
@@ -229,12 +274,18 @@ export default function AdminManagement() {
                 id="create-tier"
                 className="admin-select"
                 value={form.adminTier}
-                onChange={(e) => setForm((f) => ({ ...f, adminTier: e.target.value }))}
+                onChange={(e) => handleCreateTierChange(e.target.value)}
               >
                 <option value="admin">Admin</option>
                 <option value="super_admin">Super Admin</option>
               </select>
             </div>
+            {form.adminTier === 'admin' && (
+              <AdminPrivilegesEditor
+                value={form.adminPrivileges}
+                onChange={(adminPrivileges) => setForm((f) => ({ ...f, adminPrivileges }))}
+              />
+            )}
             <button type="submit" className="admin-btn admin-btn--primary" disabled={creating}>
               {creating ? 'Creating…' : 'Create admin'}
             </button>
@@ -305,12 +356,18 @@ export default function AdminManagement() {
                   id="edit-tier"
                   className="admin-select"
                   value={editForm.adminTier}
-                  onChange={(e) => setEditForm((f) => ({ ...f, adminTier: e.target.value }))}
+                  onChange={(e) => handleEditTierChange(e.target.value)}
                 >
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
               </div>
+            )}
+            {editForm.adminTier === 'admin' && (
+              <AdminPrivilegesEditor
+                value={editForm.adminPrivileges}
+                onChange={(adminPrivileges) => setEditForm((f) => ({ ...f, adminPrivileges }))}
+              />
             )}
           </div>
         </AdminModal>

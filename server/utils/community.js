@@ -126,6 +126,9 @@ export const serializeGroup = (group, membership = null, extras = {}) => ({
   memberCount: group.memberCount || 0,
   lastMessageAt: group.lastMessageAt || null,
   lastMessagePreview: group.lastMessagePreview || '',
+  moderationStatus: group.moderationStatus || 'active',
+  moderationReason: group.moderationReason || '',
+  reportCount: group.reportCount || 0,
   createdAt: group.createdAt,
   updatedAt: group.updatedAt,
   myRole: membership?.role || null,
@@ -133,6 +136,23 @@ export const serializeGroup = (group, membership = null, extras = {}) => ({
   isMember: !!membership && membership.status === 'active',
   ...extras,
 });
+
+export const getGroupModerationBlock = (group, action = 'post') => {
+  const status = group?.moderationStatus || 'active';
+  if (status === 'active') return null;
+  if (status === 'suspended') {
+    return 'This group has been suspended by OPUS admin.';
+  }
+  if (status === 'restricted') {
+    if (action === 'join') return 'This group is restricted and not accepting new members.';
+    if (action === 'post') return 'This group is restricted. New messages are disabled.';
+  }
+  return null;
+};
+
+export const activeGroupsFilter = {
+  moderationStatus: { $nin: ['restricted', 'suspended'] },
+};
 
 export async function ensureUniqueSlug(name) {
   let slug = slugify(name);

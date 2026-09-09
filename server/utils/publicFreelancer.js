@@ -1,4 +1,9 @@
-export const serializePublicFreelancer = (user, { includeEmail = false, badges = [], headline = '' } = {}) => ({
+export const serializePublicFreelancer = (user, {
+  includeEmail = false,
+  badges = [],
+  headline = '',
+  tasksCompleted = 0,
+} = {}) => ({
   id: String(user._id),
   firstName: user.firstName || '',
   lastName: user.lastName || '',
@@ -6,14 +11,22 @@ export const serializePublicFreelancer = (user, { includeEmail = false, badges =
   freelancerId: user.freelancerId || '',
   bio: user.bio || '',
   professionalSummary: user.professionalSummary || '',
+  careerObjectives: user.careerObjectives || '',
+  interests: Array.isArray(user.interests) ? user.interests : [],
   skills: Array.isArray(user.skills) ? user.skills : [],
   profilePicture: user.profilePicture || '',
   degree: user.degree || '',
+  degreeName: user.degreeName || '',
   schoolName: user.schoolName || '',
+  passoutYear: user.passoutYear ?? null,
+  stillRunning: !!user.stillRunning,
   city: user.city || '',
   country: user.country || '',
+  stateProvince: user.stateProvince || '',
   certifications: user.certifications || [],
   projects: user.projects || [],
   headline: headline || '',
   badges,
+  tasksCompleted: Number(tasksCompleted) || 0,
+  memberSince: user.createdAt || null,
 });
